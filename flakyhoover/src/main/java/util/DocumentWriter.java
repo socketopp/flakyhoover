@@ -34,13 +34,17 @@ public class DocumentWriter {
 
 	public static DocumentWriter createDocumentWriter(String[] headers, String filename) throws IOException {
 		return new DocumentWriter(headers, filename);
-		
+
 	}
+
+	public static String[] getHeaders() {
+		return headers;
+	}
+
 	public static void setup() throws IOException {
 		fw = new FileWriter(filename, true);
-		csvFilePrinter = new CSVPrinter(fw, CSVFormat.DEFAULT.withHeader(headers));
+		csvFilePrinter = new CSVPrinter(fw, CSVFormat.DEFAULT.withHeader(getHeaders()));
 
-		
 //		file = new File(filename);
 //		if(!file.exists()) {
 //			fw = new FileWriter(filename, true);
@@ -50,12 +54,14 @@ public class DocumentWriter {
 
 //    https://www.dev2qa.com/read-write-csv-file-with-apache-commons-csv/
 
-	public static void writeToCSV(ArrayList<String> data) throws IOException {
+	public static void writeToCSV(ArrayList<ArrayList<String>> data) throws IOException {
 
 		try {
-			
-			csvFilePrinter.printRecord(data.toArray());
-			csvFilePrinter.flush();
+			for (ArrayList<String> arrayList : data) {
+
+				csvFilePrinter.printRecord(arrayList.toArray());
+				csvFilePrinter.flush();
+			}
 
 			// {file: ArrayList<ArrayList<String>>
 
@@ -64,31 +70,40 @@ public class DocumentWriter {
 //			csvPrinter.printRecord("3", "Tim cook", "CEO", "Apple");
 //			csvPrinter.printRecord(Arrays.asList("4", "Mark Zuckerberg", "CEO", "Facebook"));
 
-
 		} catch (Exception e) {
 			System.out.println(e);
 		}
 
 	}
 
-	public static ArrayList<String> prepareData(TestFile testfile) {
-		ArrayList<String> data = new ArrayList<String>();
+	public static ArrayList<ArrayList<String>> prepareData(TestFile testfile) {
+		ArrayList<ArrayList<String>> data = new ArrayList<ArrayList<String>>();
+		ArrayList<String> line = new ArrayList<String>();
 
 		for (AbstractFlaky flaky : testfile.getFlakyInst()) {
-			ArrayList<TestSmell> smells = flaky.getTestSmells();
-			if(smells != null) {
-				for (TestSmell smell : smells) {
-					data.add(smell.getProject());
-					data.add(smell.getTestClass());
-					data.add(smell.getTestMethod());
-					data.add(smell.getSmellType());
-					data.add(smell.getFlakinessType());
+			System.out.println("get has flaky: " + flaky.getHasFlaky());
+			if (flaky.getHasFlaky()) {
+				ArrayList<TestSmell> smells = flaky.getTestSmells();
+				if (smells != null) {
 					
-					break;
+					System.out.println("prepare success");
+					for (TestSmell smell : smells) {
+						line.add(smell.getProject());
+						line.add(smell.getTestClass());
+						line.add(smell.getTestMethod());
+						line.add(smell.getSmellType());
+						line.add(smell.getFlakinessType());
+//					break;
+						data.add(line);
+
+						line = new ArrayList<String>();
+
+					}
+				} else {
+					System.out.println("prepare fail");
 				}
+
 			}
-
-
 		}
 		return data;
 	}

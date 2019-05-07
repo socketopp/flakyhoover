@@ -33,7 +33,9 @@ public class Main {
 //	private static final String TEST_CON_PATH = "src\\main\\java\\lab\\TestContent.java";
 //	private static final String TEST_INDIRECT = "src\\main\\java\\lab\\TestHTMLLanguageParser.java";
 //	private static final String TEST_INDIRECT = "src\\main\\java\\lab\\TestSubcollection.java";
-	private static final String TEST_INDIRECT = "src\\main\\java\\lab\\TestSuffixURLFilter.java";
+//	private static final String TEST_INDIRECT = "src\\main\\java\\lab\\TestByteBloomFilter.java";
+	private static final String TEST_INDIRECT = "src\\main\\java\\lab\\HFileArchiveTestingUtil.java";
+//	private static final String TEST_INDIRECT = "src\\main\\java\\lab\\TestSuffixURLFilter.java";
 	private static FlakyDetector flakyDetector;
 	private static DocumentWriter dw;
 	private static final String[] headers = { "project", "test-class", "test-method", "smell-type", "flakiness-type" };
@@ -41,25 +43,78 @@ public class Main {
 
 //	TO-DO 
 //	For each method, add line start (first occurence, and line end for the last occurence if something is smelly/flaky)
+	// If check indexing an list, always check the length before:pp otherwise u get an indexerror, not fun.
 
 	public static void main(String[] args)
 			throws IOException, ParserConfigurationException, TransformerException, SAXException {
-//		String pathToProject = null;
-//		String projectName = null;
-//		try {
-//			pathToProject = args[0];
-//			projectName = args[1];
-//		} catch (Exception e) {
-//			System.out.println("Missing parameters: " + e);
-//		}
+		String pathToProject = null;
+		String projectName = null;
+		try {
+			pathToProject = args[0];
+			projectName = args[1];
+		} catch (Exception e) {
+			System.out.println("Missing parameters: " + e);
+		}
 
-//		ArrayList<TestFile> testFiles = new ArrayList<TestFile>();
-//		ArrayList<String> projectFiles = Util.getAllFiles(pathToProject);
-//		for (String path : projectFiles) {
-//			testFiles.add(new TestFile(projectName, path, ""));
+		ArrayList<TestFile> testFiles = new ArrayList<TestFile>();
+		ArrayList<String> projectFiles = Util.getAllFiles(pathToProject);
+		for (String path : projectFiles) {
+			testFiles.add(new TestFile(projectName, path, ""));
+		}
+		
+		flakyDetector = new FlakyDetector();
+
+		// Bugg hittar saker i TestByteBloomFilter när jag kör .jar men inte i eclipse lol. Beror på Jclasses duuh (FIXAT)
+		// fixa test run war.... om två metoder i samma klass kör samma metod då ere knas men borde inte vara så om inte metoderna är klassade som test run war:oooo
+
+//		TestFile testfile = new TestFile("beaconsperth", TEST_INDIRECT, "");
+//		testfile = flakyDetector.detect(testfile);
 //
+//		ArrayList<ArrayList<String>> data = DocumentWriter.prepareData(testfile);
+//		System.out.println("SIZEBBBB: " + data.size());
+//		for(ArrayList<String> arrayList : data) {
+//			
+////			System.out.println("res: " + arrayList.toArray());
+//			for(String s : arrayList) {
+//				System.out.println("res: " + s);
+//
+//			}
+//			System.out.println("");
+//		}
+		
+//		testfile.printResult();
+//
+		DocumentWriter.createDocumentWriter(headers, projectName + ".csv");
+		DocumentWriter.setup();
+
+
+		for (TestFile testfile : testFiles) {
+			testfile = flakyDetector.detect(testfile);
+			ArrayList<ArrayList<String>> data = DocumentWriter.prepareData(testfile);
+			if(!data.isEmpty() || !data.equals("")) {
+				System.out.println("data success");
+				DocumentWriter.writeToCSV(data);
+			}else {
+				System.out.println("data fail");
+
+			}
+		}
+
+		
+//		ArrayList<ArrayList<String>> data = DocumentWriter.prepareData(testfile);
+
+//		flakyDetector = new FlakyDetector();
+//		for (TestFile testfile : testFiles) {
+//			testfile = flakyDetector.detect(testfile);
+//			ArrayList<String> data = DocumentWriter.prepareData(testfile);
+//			if(!data.isEmpty()) {
+//				DocumentWriter.writeToCSV(data);
+//			}
 //		}
 
+		
+		
+		
 //		File f  = new File("new.txt");
 //		if(!f.exists()) {
 //			FileWriter fw = new FileWriter(f);
@@ -72,31 +127,7 @@ public class Main {
 //			System.out.println("RES: " + filePath.delete());
 //
 //		}
-//		
-
-//		TestFile testfile = new TestFile("beaconsperth", TEST_INDIRECT, "");
-//
-//		flakyDetector = new FlakyDetector();
-//
-//		testfile = flakyDetector.detect(testfile);
-//		testfile.printResult();
-
-		DocumentWriter.createDocumentWriter(headers, "projectName" + ".csv");
-		DocumentWriter.setup();
-		
-////		ArrayList<String> data = new ArrayList<>(Arrays.asList("apache-cassandra-1.1", "org.apache.cassandra.utils.IntervalTest", "testIntersects","fire-and-forget", "async-wait"));
-//
-////
-	
-//
-//		flakyDetector = new FlakyDetector();
-//		for (TestFile testfile : testFiles) {
-//			testfile = flakyDetector.detect(testfile);
-//			ArrayList<String> data = DocumentWriter.prepareData(testfile);
-//			if(!data.isEmpty()) {
-//				DocumentWriter.writeToCSV(data);
-//			}
-//		}
+////	ArrayList<String> data = new ArrayList<>(Arrays.asList("apache-cassandra-1.1", "org.apache.cassandra.utils.IntervalTest", "testIntersects","fire-and-forget", "async-wait"));
 
 		// Hämta alla filer för ett projekt
 		// Konvertera till en lista med TestFiles

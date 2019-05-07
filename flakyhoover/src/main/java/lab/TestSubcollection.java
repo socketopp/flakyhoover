@@ -28,11 +28,9 @@ import org.apache.nutch.util.NutchConfiguration;
 import junit.framework.TestCase;
 
 public class TestSubcollection extends TestCase {
+//	private Subcollection sc = new Subcollection(new Configuration());
+	private SubcollectionBroken sc = new SubcollectionBroken(new Configuration());
 
-	/**Test filtering logic
-   *
-   * @throws Exception
-   */
   public void testFilter() throws Exception {
 //  Configuration config = NutchConfiguration.create();
 	  
@@ -40,7 +38,7 @@ public class TestSubcollection extends TestCase {
 //    HbaseConfiguration config = NutchConfiguration.create();
   
 	  
-	Subcollection sc = new Subcollection(NutchConfiguration.create());
+//	 Subcollection sc = new Subcollection();
 	  
 	  
 //    Subcollection sc = new Subcollection(new Configuration());
@@ -58,8 +56,47 @@ public class TestSubcollection extends TestCase {
 //    assertEquals(null, sc.filter("http://www.apache.org/img/image.jpg"));
 
     //no match
-    assertEquals(null, sc.filter("http://www.google.com/"));
+//    assertEquals(null, sc.filter("http://www.google.com/"));
   }
+  
+//  public void resourceError1() {
+//	  File newFIle = File("/");
+//	  
+//  }
+//  public void resourceError2() {
+//	  File newFIle = File("/");
+//	  
+//  }
+//  
+//  public void IndirectResourceError() {
+//	  HBFile newFIle = HBFileFile("/");
+//	  
+//  }
+//  
+//  
+//  
+//  
+  
+
+  
+  
+  @Test
+  public void testScanEmptyToBBA()
+  throws IOException, InterruptedException, ClassNotFoundException {
+    testScan(null, "bba", "baz");
+}
+  
+  public void testScan(String a,String c,String b) {
+	  
+  }
+  
+//  public void testRunWar() {
+////	  Conntection db = connect();
+//	  Subcollection sc = new Subcollection(new ConfigurationNew());
+//  }
+//  
+  
+  
 
 //	public void testInput() {
 //		StringBuffer xml = new StringBuffer();

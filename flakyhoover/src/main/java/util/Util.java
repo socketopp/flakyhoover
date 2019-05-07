@@ -1,19 +1,30 @@
 package util;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Properties;
 
 import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 
+import flakyhoover.Main;
+
 public class Util {
+	
+	public Util() {
+		
+	}
 
 	public static boolean isValidTestMethod(MethodDeclaration n) {
 		boolean valid = false;
@@ -40,12 +51,16 @@ public class Util {
 	}
 	
 
-	public static ArrayList<String> getAllJavaClasses() {
+	public static ArrayList<String> getAllJavaClasses()  {
 		ArrayList<String> javaClasses = new ArrayList<String>();
 
-		InputStream fstream = Util.class.getClassLoader().getResourceAsStream("java_classes.txt");
-		
+		InputStream fstream = Util.class.getResourceAsStream("/java_classes.txt"); 
+
 		if(fstream != null) {
+
+			System.out.println("CAME HERE");
+			
+
 			InputStreamReader inputStreamReader = new InputStreamReader(fstream);
 			BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
 			

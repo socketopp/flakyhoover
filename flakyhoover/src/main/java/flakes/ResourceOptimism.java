@@ -89,7 +89,9 @@ public class ResourceOptimism extends AbstractFlaky {
 		private List<String> classVariables = new ArrayList<>();
 		private List<String> okVariables = new ArrayList<>();
 		private TestSmell testSmell = new TestSmell();
-		private boolean validTestMethod;
+		private String flakinessType = "input-output";
+
+
 		private List<String> validCalls = new ArrayList<String>(
 				Arrays.asList("exists", "isFile", "canExecute", "canRead", "notExists", "canWrite"));
 		private boolean isTestClass;
@@ -102,13 +104,15 @@ public class ResourceOptimism extends AbstractFlaky {
 			if (isTestClass) {
 				currentMethod = n;
 
-				validTestMethod = Util.isValidTestMethod(n);
+//				validTestMethod = Util.isValidTestMethod(n);
 
-				System.out.println("validTestMethod: " + validTestMethod);
+//				System.out.println("validTestMethod: " + validTestMethod);
 
 				ArrayList<Parameter> params = new ArrayList<Parameter>();
 				System.out.println("YE buoy");
-				if (currentMethod != null && validTestMethod && isTestClass) {
+//				if (currentMethod != null && validTestMethod && isTestClass) {
+				if (currentMethod != null && isTestClass) {
+
 
 					if (n.getParameters().size() > 0) {
 						for (Parameter argument : n.getParameters()) {
@@ -123,7 +127,7 @@ public class ResourceOptimism extends AbstractFlaky {
 					}
 				}
 
-				testSmell.setFlakinessType("input-output");
+				testSmell.setFlakinessType(flakinessType);
 				testSmell.setProject(projectName);
 				testSmell.setTestMethod(n.getNameAsString());
 				testSmell.setSmellType(getFlakyName());
@@ -137,6 +141,7 @@ public class ResourceOptimism extends AbstractFlaky {
 				if (methodVariables.size() >= 1 || hasFlaky == true) {
 					testSmells.add(testSmell);
 				}
+				
 				System.out.println("methodVariables: " + this.methodVariables);
 				System.out.println("hasFlaky: " + hasFlaky);
 
@@ -155,7 +160,7 @@ public class ResourceOptimism extends AbstractFlaky {
 				methodVariables = new ArrayList<>();
 				okVariables = new ArrayList<>();
 				testSmell = new TestSmell();
-				validTestMethod = false;
+//				validTestMethod = false;
 				params = new ArrayList<Parameter>();
 
 			}
@@ -179,7 +184,8 @@ public class ResourceOptimism extends AbstractFlaky {
 
 		@Override
 		public void visit(ObjectCreationExpr n, Void arg) {
-			if (currentMethod != null && validTestMethod && isTestClass) {
+//			if (currentMethod != null && validTestMethod && isTestClass) {
+			if (currentMethod != null && isTestClass) {
 				if (n.getParentNode().isPresent()) {
 					if (!(n.getParentNode().get() instanceof VariableDeclarator)) { // VariableDeclarator is handled in
 																					// the override method
@@ -224,7 +230,9 @@ public class ResourceOptimism extends AbstractFlaky {
 
 		@Override
 		public void visit(VariableDeclarator n, Void arg) {
-			if (currentMethod != null && validTestMethod && isTestClass) {
+//			if (currentMethod != null && validTestMethod && isTestClass) {
+			if (currentMethod != null && isTestClass) {
+
 				if (n.getTypeAsString().equals("File") || n.getTypeAsString().equals("Path")) {
 
 					methodVariables.add(n.getNameAsString());
@@ -267,7 +275,9 @@ public class ResourceOptimism extends AbstractFlaky {
 			System.out.println("classVars: " + classVariables);
 			System.out.println("okVars: " + this.okVariables);
 			System.out.println(" ");
-			if (currentMethod != null && validTestMethod && isTestClass) {
+//			if (currentMethod != null && validTestMethod && isTestClass) {
+			if (currentMethod != null && isTestClass) {
+
 
 				if (n.getNameAsString().equals("exists") || n.getNameAsString().equals("isFile")
 						|| n.getNameAsString().equals("canExecute") || n.getNameAsString().equals("canRead")
