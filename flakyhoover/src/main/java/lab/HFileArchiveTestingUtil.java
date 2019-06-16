@@ -113,7 +113,7 @@ public class HFileArchiveTestingUtil {
 
     List<String> currentFiles = lists.get(1);
     Collections.sort(currentFiles);
-
+    
     List<String> backedup = lists.get(2);
     Collections.sort(backedup);
 

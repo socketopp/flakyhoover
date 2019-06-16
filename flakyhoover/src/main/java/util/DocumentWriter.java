@@ -1,13 +1,20 @@
 package util;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVPrinter;
+import org.apache.commons.csv.CSVRecord;
 
 import flakyhoover.AbstractFlaky;
 import flakyhoover.TestFile;
@@ -76,17 +83,96 @@ public class DocumentWriter {
 
 	}
 
+
+
+	public static List<List<String>>  readFromCSV(String csvFilePath, String[] headers) {
+
+		List<List<String>> retList = new ArrayList<List<String>>();
+		FileReader fReader = null;
+		CSVParser csvParser = null;
+
+		try {
+			
+			InputStream csvFile = new FileInputStream(csvFilePath);
+//			
+//			CSVParser csvParser1 = CSVFormat.DEFAULT.parse(new InputStreamReader(csvFile));
+//			for (CSVRecord record : csvParser1) {  
+//			    String field_1 = record.get(0);
+//			   
+//			    System.out.println(field_1);
+//			 
+//			}
+			
+			
+			
+			fReader = new FileReader(csvFilePath);
+			
+
+			CSVFormat csvFormat = CSVFormat.DEFAULT.withHeader(headers).withDelimiter(';');
+
+			csvParser = new CSVParser(fReader, csvFormat);
+			
+			
+			List<CSVRecord> rowList = csvParser.getRecords();
+
+			
+			for (int i = 1; i < rowList.size(); i++) {
+				CSVRecord row = rowList.get(i);
+				
+				String project = row.get("project");
+				String test_class = row.get("test-class");
+				String test_method = row.get("test-method");
+				String smell_type = "";
+				String flakiness_type ="";
+				try {
+					smell_type = row.get("smell-type");
+					flakiness_type = row.get("flakiness-type");
+				}catch(Exception e) {
+					
+				}
+
+				List<String> lineList = new ArrayList<String>();
+
+				lineList.add(project);
+				lineList.add(test_class);
+				lineList.add(test_method);
+				lineList.add(smell_type);
+				lineList.add(flakiness_type);
+
+				retList.add(lineList);
+			}
+
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		} finally {
+			try {
+				if (fReader != null) {
+					fReader.close();
+				}
+
+				if (csvParser != null) {
+					csvParser.close();
+				}
+			} catch (Exception ex) {
+				ex.printStackTrace();
+			}
+		}
+
+		return retList;
+
+	}
+
 	public static ArrayList<ArrayList<String>> prepareData(TestFile testfile) {
 		ArrayList<ArrayList<String>> data = new ArrayList<ArrayList<String>>();
 		ArrayList<String> line = new ArrayList<String>();
 
 		for (AbstractFlaky flaky : testfile.getFlakyInst()) {
-			System.out.println("get has flaky: " + flaky.getHasFlaky());
+//			System.out.println("get has flaky: " + flaky.getHasFlaky());
 			if (flaky.getHasFlaky()) {
 				ArrayList<TestSmell> smells = flaky.getTestSmells();
 				if (smells != null) {
-					
-					System.out.println("prepare success");
+
+//					System.out.println("prepare success");
 					for (TestSmell smell : smells) {
 						line.add(smell.getProject());
 						line.add(smell.getTestClass());
@@ -100,7 +186,7 @@ public class DocumentWriter {
 
 					}
 				} else {
-					System.out.println("prepare fail");
+//					System.out.println("prepare fail");
 				}
 
 			}
@@ -117,7 +203,7 @@ public class DocumentWriter {
 		CSVPrinter csvPrinter = null;
 
 		try {
-			System.out.println("Prepare CSVPrinter object. ");
+//			System.out.println("Prepare CSVPrinter object. ");
 			/* Create file writer. */
 			fWriter = new FileWriter(filename);
 
@@ -127,11 +213,11 @@ public class DocumentWriter {
 			csvPrinter = new CSVPrinter(fWriter, CSVFormat.DEFAULT.withHeader("project", "test-class", "test-method",
 					"smell-type", "flakiness-type"));
 
-			System.out.println("Print header in file. ");
+//			System.out.println("Print header in file. ");
 			/* First create header in csv file. */
 //			csvPrinter.printRecord(headers);
 
-			System.out.println("Loop in the row list and print each row to csv file " + filename);
+//			System.out.println("Loop in the row list and print each row to csv file " + filename);
 			/* Loop the user account list and print to csv file. */
 //			for (int i = 0; i < data.size(); i++) {
 //				String d = data.get(i);
@@ -147,7 +233,7 @@ public class DocumentWriter {
 //				csvPrinter.printRecord(1, "john73", "John", "Doe", "a");
 //			}
 
-			System.out.println("Create file compelete successfully. ");
+//			System.out.println("Create file compelete successfully. ");
 		} catch (Exception e) {
 
 		}

@@ -3,18 +3,25 @@ package flakes;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.expr.Expression;
+import com.github.javaparser.ast.expr.MethodCallExpr;
+import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.stmt.ExpressionStmt;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 
 import flakyhoover.AbstractFlaky;
 import flakyhoover.AbstractFlakyElement;
+import flakyhoover.IntelMethod;
 import flakyhoover.MetaData;
 import flakyhoover.TestMethod;
+import util.ASTHelper;
 import util.TestSmell;
 import util.Util;
 
@@ -50,7 +57,12 @@ public class FireAndForget extends AbstractFlaky {
 		testSmells = new ArrayList<TestSmell>();
 		FireAndForget.ClassVisitor classVisitor;
 		classVisitor = new FireAndForget.ClassVisitor();
+
+		classVisitor.setState("analyze");
 		classVisitor.visit(testFileCompilationUnit, null);
+		classVisitor.setState("analyzeRelationState");
+		classVisitor.visit(testFileCompilationUnit, null);
+
 	}
 
 	@Override
@@ -67,37 +79,55 @@ public class FireAndForget extends AbstractFlaky {
 
 		private List<String> asyncWords = Arrays.asList("wait", "await", "async", "asynchronous", "sleep", "receive",
 				"Thread.sleep", "waiting", "timeout");
+		private String state;
+		private Set<IntelMethod> allMethodsData = new HashSet<IntelMethod>();
+		private Set<String> allClassMethods = new HashSet<String>();
 
 		private List<String> externalCalls = Arrays.asList("server", "client", "context", "database", "soap", "call",
-				"getResource", "manager", "factory", "response", "cursor", "FileOutputStream", "sql", "read", "http",
-				"fetch", "receive", "connect", "obtain", "db", "aquire", "create", "execute", "getInstance", "load");
-		
-		//Create?Nja
+				"job", "request", "con", "executeQuery", "stmt", "getResource", "manager", "factory", "response",
+				"cursor", "sql", "read", "http", "socket", "listener", "servlet", "fetch", "receive", "connect",
+				"obtain", "db", "aquire", "create", "execute", "getInstance", "load");
+
+		// Create?Nja
+//		FileOutputStream
+//		getInstance?? getResource??? getInstance
+
 		private int lineNrSync = -1;
 		private int lineNrExternal = -1;
 
 		private TestSmell testSmell = new TestSmell();
-		private boolean isTestClass;
+		private boolean isTestClass = false;
 
 		private boolean containerContain(List<String> container, String keyword) {
 			for (int i = 0; i < container.size(); i++) {
 				if (keyword.contains(container.get(i))) {
-					System.out.println("containerContain: " + container.get(i).toString());
 					return true;
 				}
 			}
 			return false;
 		}
-		
+
+		public void setState(String state) {
+			this.state = state;
+		}
+
 		@Override
 		public void visit(ClassOrInterfaceDeclaration n, Void arg) {
 
-			isTestClass = Util.isValidTestClass(n);
+			if (!isTestClass) {
+				isTestClass = Util.isValidTestClass(n);
+			}
 
 			super.visit(n, arg);
 
 		}
-		
+
+//		@Override
+//		public void visit(ImportDeclaration n, Void arg) {
+//			System.out.println("import: " + n);
+//			super.visit(n, arg);
+//		}
+
 		private void initTestSmells(MethodDeclaration n) {
 			testSmell.setFlakinessType(flakinessType);
 			testSmell.setProject(projectName);
@@ -109,52 +139,94 @@ public class FireAndForget extends AbstractFlaky {
 		// examine all methods in the test class
 		@Override
 		public void visit(MethodDeclaration n, Void arg) {
-			System.out.println("MethodDeclaration: " + n.getNameAsString());
+//			System.out.println("MethodDeclaration: " + n.getNameAsString());
 
 			if (isTestClass) {
-				initTestSmells(n);
 
+				switch (state) {
+				case "analyze": {
+					currentMethod = n;
+					initTestSmells(n);
 
-				currentMethod = n;
+					this.allMethodsData.add(new IntelMethod(n.getNameAsString(), false));
+					this.allClassMethods.add(n.getNameAsString());
 
-				testMethod = new TestMethod(n.getNameAsString(), n.getBegin().get().line);
-				testMethod.setHasFlaky(false); // default value is false (i.e. no flakiness)
+					testMethod = new TestMethod(n.getNameAsString(), n.getBegin().get().line);
+					testMethod.setHasFlaky(false); // default value is false (i.e. no smell)
+					break;
+				}
+				}
 
 				super.visit(n, arg);
-				
-				
 
-				if (this.lineNrSync == -1 && this.lineNrExternal != -1) {
-					this.hasFlaky = true;
-				} else if (this.lineNrExternal > this.lineNrSync) {
-					System.out.println("!2");
-					this.hasFlaky = true;
-				} else {
-					System.out.println("!3");
-					this.hasFlaky = false;
+				System.out.println("");
+
+				switch (state) {
+				case "analyze": {
+
+					if (this.lineNrSync == -1 && this.lineNrExternal != -1) {
+						this.hasFlaky = true;
+					} else if (this.lineNrExternal > this.lineNrSync) {
+						this.hasFlaky = true;
+					} else {
+						this.hasFlaky = false;
+					}
+
+					testMethod.setHasFlaky(hasFlaky);
+					if (hasFlaky) {
+						testSmells.add(testSmell);
+						flakyElementList.add(testMethod);
+						ASTHelper.setMethodStatusFlaky(n, allMethodsData, true);
+
+					}
+					testSmell = new TestSmell();
+					hasFlaky = false;
+					currentMethod = null;
+					this.lineNrExternal = -1;
+					this.lineNrSync = -1;
+
+					break;
 				}
 
-				testMethod.setHasFlaky(hasFlaky == true);
-				testMethod.addMetaDataItem("VariableCond", metaData);
+				// Analyze if a() calls a smelly method b(), then a is also smelly().
+				case "analyzeRelationState": {
+					System.out.println("analyzeRelationState after");
+					initTestSmells(n);
 
+					testMethod = new TestMethod(n.getNameAsString(), n.getBegin().get().line);
+					testMethod.setHasFlaky(false);
+					hasFlaky = analyzeRelations(n);
 
-				if (testMethod.getHasFlaky()) {
-					testSmells.add(testSmell);
-					flakyElementList.add(testMethod);
+					if (hasFlaky) {
+						testMethod.setHasFlaky(true);
+						testSmells.add(testSmell);
+						flakyElementList.add(testMethod);
+					}
+					hasFlaky = false;
+					testSmell = new TestSmell();
+//				testMethod.addMetaDataItem("VariableCond", metaData);
+
+					break;
+
 				}
 
-				// reset values for next method
-				testSmell = new TestSmell();
-				currentMethod = null;
-				hasFlaky = false;
-				this.lineNrExternal = -1;
-				this.lineNrSync = -1;
+				}
 			}
 		}
 
 		@Override
 		public void visit(ExpressionStmt n, Void arg) {
 			if (currentMethod != null) {
+				System.out.println("ExpressionStmt: " + n);
+				Expression e = n.getExpression();
+				List<NameExpr> a = e.findAll(NameExpr.class);
+
+				for (NameExpr expr : a) {
+					System.out.println("EXPR: " + expr);
+				}
+				System.out.println("a: " + a.size());
+				System.out.println("Expression: " + e);
+
 				if (containerContain(externalCalls, n.toString())) {
 					this.lineNrExternal = n.getBegin().get().line;
 					metaData.add(
@@ -167,6 +239,43 @@ public class FireAndForget extends AbstractFlaky {
 				}
 			}
 			super.visit(n, arg);
+		}
+
+		@Override
+		public void visit(MethodCallExpr n, Void arg) {
+
+			if (currentMethod != null && state.equals("analyze")) {
+				System.out.println("MethodCallExpr: " + n.getNameAsString());
+				String base = ASTHelper.checkIfClassMember(n);
+
+				if (base.equals("empty")) {
+					IntelMethod methodData = ASTHelper.getMethod(currentMethod.getNameAsString(), this.allMethodsData);
+					if (!n.getNameAsString().equals(currentMethod.getNameAsString())) {
+						System.out.println("methodData: " + n.getNameAsString());
+						methodData.addMethod(n.getNameAsString());
+					}
+				}
+			}
+			super.visit(n, arg);
+		}
+
+		public boolean analyzeRelations(MethodDeclaration n) {
+
+			for (String method : allClassMethods) {
+				if (method.equals(n.getNameAsString())) {
+					if (!ASTHelper.checkIfFlaky(method, allMethodsData)) {
+						IntelMethod intelMethod = ASTHelper.getMethod(method, allMethodsData);
+						if (!intelMethod.isFlaky()) {
+							for (String call : intelMethod.getMethods()) {
+								if (ASTHelper.checkIfFlaky(call, allMethodsData)) {
+									return true;
+								}
+							}
+						}
+					}
+				}
+			}
+			return false;
 		}
 	}
 

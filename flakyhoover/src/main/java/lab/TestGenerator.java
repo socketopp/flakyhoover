@@ -70,58 +70,58 @@ protected void tearDown() {
 
 
   // Algoritm 1:
-  // Hämta alla klassvariabler (Identifiers/Path).
-  // För varje metod M i klass K.
-  // Hämta alla objektdeklereringar (Path/identifiers) t.ex. new File(varName)/File("/http/get/fetch.txt") och spara dessa i en en map<String, ArrayList<String>.
+  // Hï¿½mta alla klassvariabler (Identifiers/Path).
+  // Fï¿½r varje metod M i klass K.
+  // Hï¿½mta alla objektdeklereringar (Path/identifiers) t.ex. new File(varName)/File("/http/get/fetch.txt") och spara dessa i en en map<String, ArrayList<String>.
 
 
   // Algoritm 2:
-  // Gå igenom att metoderna,
+  // Gï¿½ igenom att metoderna,
   	// skapa ett objekt och spara bodyn i en lista ArrayList<MethodBody>
   	// Samla ihop alla klassvariabler (Identifiers/Path).
   	//
-  // För varje metod, om metod == methodBody.name
+  // Fï¿½r varje metod, om metod == methodBody.name
   	// Kolla ifall method.body.contains(klassVariablerna):
   //
 
-//  om metoden har en referens till en klassvariabel nånstans i body, loopa isf genom resterande metoder.
-  // Om både metoderna har en överlappande klassvariabel, markera båda som flaky.
+//  om metoden har en referens till en klassvariabel nï¿½nstans i body, loopa isf genom resterande metoder.
+  // Om bï¿½de metoderna har en ï¿½verlappande klassvariabel, markera bï¿½da som flaky.
 
 
 
 
 	  // Algoritm 3:
-	  // Samla ihop alla klassvariabler (Identifiers/Path) och lägg till variabel container VC.
+	  // Samla ihop alla klassvariabler (Identifiers/Path) och lï¿½gg till variabel container VC.
 
-	  // För varje metod M
-		  // Om en objectDeclarations sker, PATH/FILE, om variabel, lägg den till MC [M: [metodvariabler]], om PATH/FILE: lägg URLEN till VC.
-		  // Om en methodCall, lägg dessa argument och metodnamn i MC  M: [metodvariabler].
-		  // Om ett objekt anropas, lägg dess basvariabel och argument i MC  M: [metodvariabler].
+	  // Fï¿½r varje metod M
+		  // Om en objectDeclarations sker, PATH/FILE, om variabel, lï¿½gg den till MC [M: [metodvariabler]], om PATH/FILE: lï¿½gg URLEN till VC.
+		  // Om en methodCall, lï¿½gg dessa argument och metodnamn i MC  M: [metodvariabler].
+		  // Om ett objekt anropas, lï¿½gg dess basvariabel och argument i MC  M: [metodvariabler].
 
-	  // För varje metod M1 i MC
-	  	// För varje metod M2 i MC
+	  // Fï¿½r varje metod M1 i MC
+	  	// Fï¿½r varje metod M2 i MC
 	  		// om M1.name != M2.name
-	  		// För varje var i VC
+	  		// Fï¿½r varje var i VC
 	  			// Om M1.contains(var) && M2.contains(var)
-	  				// Markera M1 & M2 som flaky (Då de delar en resurs)
+	  				// Markera M1 & M2 som flaky (Dï¿½ de delar en resurs)
 
-	  // För varje metod M1 i MC
-		// För varje metod M2 i MC
+	  // Fï¿½r varje metod M1 i MC
+		// Fï¿½r varje metod M2 i MC
   			// om M1.vars.contain(M2.vars)
-  				// markera båda som flaky.
+  				// markera bï¿½da som flaky.
 
 
 
   				// OM M1.name.contains(VC) || M2.name.contains(VC)
-  					// Markera de som är sannasom flaky (då
+  					// Markera de som ï¿½r sannasom flaky (dï¿½
 
 
 
-  	// Om ett en icke medlemsfunktionsanrop anropas och har en klassvariabel inparamter, lägg dess bas in i flaky listan.
+  	// Om ett en icke medlemsfunktionsanrop anropas och har en klassvariabel inparamter, lï¿½gg dess bas in i flaky listan.
 
-    // Om ett medlemsfunktionsanrop M1 har klassvariabel som inparameter som anropas i M, lägg dessa in i flaky listan. ( Markera M och M1 som flaky.)
+    // Om ett medlemsfunktionsanrop M1 har klassvariabel som inparameter som anropas i M, lï¿½gg dessa in i flaky listan. ( Markera M och M1 som flaky.)
 
-  // För varje metod M
+  // Fï¿½r varje metod M
 
   // Metodgraf
 
@@ -131,28 +131,28 @@ protected void tearDown() {
 
 
 
-  // Observation Två fall:
-  // (GO)   Fall 1: Man ser att att testdir är inparameter till klassfunktionen delete() inuti tearDown vilket implicerar att delete() är smelly.
-  // (FAIL) Fall 2: I setup() kallas testdir av fs.delete() vilket implicerar de delar samma objekt, däremot så implicerar det inte att det är specifikt samma resurs.
+  // Observation Tvï¿½ fall:
+  // (GO)   Fall 1: Man ser att att testdir ï¿½r inparameter till klassfunktionen delete() inuti tearDown vilket implicerar att delete() ï¿½r smelly.
+  // (FAIL) Fall 2: I setup() kallas testdir av fs.delete() vilket implicerar de delar samma objekt, dï¿½remot sï¿½ implicerar det inte att det ï¿½r specifikt samma resurs.
 
 
   //  Class variables
-  // Hämta pathen och identifiern i new File(x), new Path(y) och spara i containern.
+  // Hï¿½mta pathen och identifiern i new File(x), new Path(y) och spara i containern.
 
   // Objektdeklareringar
-  //Hämta pathen i VariableDeclarationExpr för path/File, då den används lokalt och spara i containern.
+  //Hï¿½mta pathen i VariableDeclarationExpr fï¿½r path/File, dï¿½ den anvï¿½nds lokalt och spara i containern.
 
 
   // methodcallerexpr
-  // om paramtetern är en path/identifier som är global finns i containern, markera metoden som kallas för smelly
+  // om paramtetern ï¿½r en path/identifier som ï¿½r global finns i containern, markera metoden som kallas fï¿½r smelly
 
 
-  // om en globalt objekt använder sig av path/identifier, lägg till globala objektets instans i listan.
+  // om en globalt objekt anvï¿½nder sig av path/identifier, lï¿½gg till globala objektets instans i listan.
   //ELLER
-  // Om ett objekt använder sig av resuren likt fs.delete(testdir), lägg till resursen fs i containern --- givet att den inte är deklararad i scopet utan finns globally....Skapa en container med globals?
+  // Om ett objekt anvï¿½nder sig av resuren likt fs.delete(testdir), lï¿½gg till resursen fs i containern --- givet att den inte ï¿½r deklararad i scopet utan finns globally....Skapa en container med globals?
 
 
-  // Om en metods body innehåller antingen identifiern/pathen/metodanrop, lägg till metoden i containern, dvs, ifall en metod kallar på den här metoden, gör den smelly.
+  // Om en metods body innehï¿½ller antingen identifiern/pathen/metodanrop, lï¿½gg till metoden i containern, dvs, ifall en metod kallar pï¿½ den hï¿½r metoden, gï¿½r den smelly.
 
 
 
@@ -333,6 +333,7 @@ protected void tearDown() {
    * @throws Exception
    * @throws IOException
    */
+  
   public void testFilter() throws IOException, Exception{
 
     ArrayList<URLCrawlDatum> list = new ArrayList<URLCrawlDatum>();
@@ -440,7 +441,7 @@ protected void tearDown() {
   private void myOwnMethod(String a, int b, double c, final FlakyDetector fd) {
 	  int myOwnInteger = 5;
 	  for(int forLoop = 0; i < 5; i++) {
-		  fs.mkdirs(dbDir);
+//		  fs.mkdirs(dbDir);
 	  }
 
   }

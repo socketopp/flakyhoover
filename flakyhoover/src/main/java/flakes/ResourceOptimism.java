@@ -2,46 +2,35 @@ package flakes;
 
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
-import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.expr.Expression;
-import com.github.javaparser.ast.expr.FieldAccessExpr;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
-import com.github.javaparser.ast.expr.VariableDeclarationExpr;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 
 import flakyhoover.AbstractFlaky;
 import flakyhoover.AbstractFlakyElement;
+import flakyhoover.IntelMethod;
 import flakyhoover.TestMethod;
+import util.ASTHelper;
 import util.TestSmell;
 import util.Util;
 
 public class ResourceOptimism extends AbstractFlaky {
-	private List<AbstractFlakyElement> flakyElementList;
-	protected String fileName;
-	protected String projectName;
-	protected ArrayList<TestSmell> testSmells;
 
-//	DONE
-	// Added orders and class referenced variables.
-	
-//	TO-DO
-	// How to evaluate
-	
-	
-//	https://github.com/apache/hbase/blob/0.94/src/test/java/org/apache/hadoop/hbase/io/hfile/TestHFilePerformance.java
-//	Valid class but not methods hmmmm.
-	
-	
+	private List<AbstractFlakyElement> flakyElementList;
+	private String fileName;
+	private String projectName;
+	private ArrayList<TestSmell> testSmells;
 
 	public ArrayList<TestSmell> getTestSmells() {
 		return testSmells;
@@ -58,21 +47,7 @@ public class ResourceOptimism extends AbstractFlaky {
 
 	@Override
 	public String getFlakyName() {
-		return "Resource Optimism";
-	}
-
-	@Override
-	public void runAnalysis(CompilationUnit testFileCompilationUnit, CompilationUnit productionFileCompilationUnit,
-			String testClassName, String projectName) throws FileNotFoundException {
-
-		this.fileName = testClassName;
-		this.projectName = projectName;
-
-		testSmells = new ArrayList<TestSmell>();
-
-		ResourceOptimism.ClassVisitor classVisitor;
-		classVisitor = new ResourceOptimism.ClassVisitor();
-		classVisitor.visit(testFileCompilationUnit, null);
+		return "ResourceOptimism";
 	}
 
 	@Override
@@ -80,310 +55,385 @@ public class ResourceOptimism extends AbstractFlaky {
 		return flakyElementList;
 	}
 
+	@Override
+	public void runAnalysis(CompilationUnit testFileCompilationUnit, CompilationUnit productionFileCompilationUnit,
+			String testClassName, String projectName) throws FileNotFoundException {
+		this.fileName = testClassName;
+		this.projectName = projectName;
+		testSmells = new ArrayList<TestSmell>();
+		ResourceOptimism.ClassVisitor classVisitor;
+		classVisitor = new ResourceOptimism.ClassVisitor();
+
+		classVisitor.setState("analyze");
+		classVisitor.visit(testFileCompilationUnit, null);
+		classVisitor.setState("analyzeRelationState");
+		classVisitor.visit(testFileCompilationUnit, null);
+
+		System.out.println("methodVariables: ");
+		Util.genericPrint(classVisitor.methodVariables);
+		System.out.println("classVariables: ");
+		Util.genericPrint(classVisitor.classVariables);
+
+//		classVisitor.setState("collectState");
+//		classVisitor.visit(testFileCompilationUnit, null);
+//
+//		classVisitor.setState("analyzeFixtureState");
+//		classVisitor.visit(testFileCompilationUnit, null);
+//
+//		classVisitor.setState("analyzeRelationState");
+//		classVisitor.visit(testFileCompilationUnit, null);
+
+//		Util.genericPrint(classVisitor.allClassMethods);
+	}
+
 	private class ClassVisitor extends VoidVisitorAdapter<Void> {
-		private MethodDeclaration currentMethod = null;
-		private int resourceOptimismCount = 0;
+
 		private boolean hasFlaky = false;
-		TestMethod testMethod;
-		private List<String> methodVariables = new ArrayList<>();
-		private List<String> classVariables = new ArrayList<>();
-		private List<String> okVariables = new ArrayList<>();
+		private boolean isTestClass = false;
+
+		private TestMethod testMethod;
+		private MethodDeclaration currentMethod = null;
 		private TestSmell testSmell = new TestSmell();
+
+		private Set<String> methodVariables = new HashSet<>();
+		private Set<String> classVariables = new HashSet<>();
+		private List<String> okVariables = new ArrayList<>();
+		private Set<IntelMethod> allMethodsData = new HashSet<IntelMethod>();
+		private Set<String> allClassMethods = new HashSet<String>();
+
 		private String flakinessType = "input-output";
+		private String state;
 
-
-		private List<String> validCalls = new ArrayList<String>(
-				Arrays.asList("exists", "isFile", "canExecute", "canRead", "notExists", "canWrite"));
-		private boolean isTestClass;
-
-		// examine all methods in the test class
-		@Override
-		public void visit(MethodDeclaration n, Void arg) {
-//			System.out.println("MethodDeclaration: " + n.getNameAsString());
-
-			if (isTestClass) {
-				currentMethod = n;
-
-//				validTestMethod = Util.isValidTestMethod(n);
-
-//				System.out.println("validTestMethod: " + validTestMethod);
-
-				ArrayList<Parameter> params = new ArrayList<Parameter>();
-				System.out.println("YE buoy");
-//				if (currentMethod != null && validTestMethod && isTestClass) {
-				if (currentMethod != null && isTestClass) {
-
-
-					if (n.getParameters().size() > 0) {
-						for (Parameter argument : n.getParameters()) {
-							params.add(argument);
-						}
-					}
-					for (Parameter param : params) {
-						if (param.getTypeAsString().equals("File") || param.getTypeAsString().equals("Path")) {
-							methodVariables.add(param.getNameAsString());
-							System.out.println("ADD TO METHODVARS " + param.getNameAsString() + " " + methodVariables);
-						}
-					}
-				}
-
-				testSmell.setFlakinessType(flakinessType);
-				testSmell.setProject(projectName);
-				testSmell.setTestMethod(n.getNameAsString());
-				testSmell.setSmellType(getFlakyName());
-				testSmell.setTestClass(fileName);
-
-				testMethod = new TestMethod(n.getNameAsString(), n.getBegin().get().line);
-				testMethod.setHasFlaky(false); // default value is false (i.e. no smell)
-
-				super.visit(n, arg);
-
-				if (methodVariables.size() >= 1 || hasFlaky == true) {
-					testSmells.add(testSmell);
-				}
-				
-				System.out.println("methodVariables: " + this.methodVariables);
-				System.out.println("hasFlaky: " + hasFlaky);
-
-				testMethod.setHasFlaky(methodVariables.size() >= 1 || hasFlaky == true);
-
-				testMethod.addDataItem("ResourceOptimismCount", String.valueOf(resourceOptimismCount));
-
-				if (testMethod.getHasFlaky()) {
-					flakyElementList.add(testMethod);
-				}
-
-				// reset values for next method
-				currentMethod = null;
-				resourceOptimismCount = 0;
-				hasFlaky = false;
-				methodVariables = new ArrayList<>();
-				okVariables = new ArrayList<>();
-				testSmell = new TestSmell();
-//				validTestMethod = false;
-				params = new ArrayList<Parameter>();
-
-			}
-
+		public String getState() {
+			return state;
 		}
 
-//		@Override
-//		public void visit(VariableDeclarationExpr n, Void arg) {
-//			if (currentMethod != null && validTestMethod && isTestClass) {
-//				for (VariableDeclarator variableDeclarator : n.getVariables()) {
-//					if (variableDeclarator.getTypeAsString().equals("File")
-//							|| variableDeclarator.getTypeAsString().equals("Path")) {
-//						System.out.println("SET FLAKY EH? LOL12");
-//
-//						methodVariables.add(variableDeclarator.getNameAsString());
-//					}
-//				}
-//			}
-//			super.visit(n, arg);
-//		}
+		public void setState(String state) {
+			this.state = state;
+		}
 
-		@Override
-		public void visit(ObjectCreationExpr n, Void arg) {
-//			if (currentMethod != null && validTestMethod && isTestClass) {
-			if (currentMethod != null && isTestClass) {
-				if (n.getParentNode().isPresent()) {
-					if (!(n.getParentNode().get() instanceof VariableDeclarator)) { // VariableDeclarator is handled in
-																					// the override method
-						if (n.getType().asString().equals("File") || n.getType().asString().equals("Path")) {
-
-							hasFlaky = true;
-						}
-					}
-				}
-			} else {
-//				System.out.println(n.getType());
-			}
-			super.visit(n, arg);
+		private void initTestSmells(MethodDeclaration n) {
+			testSmell.setFlakinessType(flakinessType);
+			testSmell.setProject(projectName);
+			testSmell.setTestMethod(n.getNameAsString());
+			testSmell.setSmellType(getFlakyName());
+			testSmell.setTestClass(fileName);
 		}
 
 		@Override
 		public void visit(ClassOrInterfaceDeclaration n, Void arg) {
-
-			isTestClass = Util.isValidTestClass(n);
+			System.out.println("ClassOrInterfaceDeclaration: " + n.getNameAsString());
+			if (!isTestClass) {
+				isTestClass = Util.isValidTestClass(n);
+			}
 
 			super.visit(n, arg);
-
 		}
 
-		
-//		is called after methodcallexpr... 3last for some fucking reason?? I need it but...
-//		@Override
-//		public void visit(Parameter n, Void arg) {
-//			System.out.println("PARAM");
-//			System.out.println(n.getParentNode().get().getClass());
-//			
-//			if (currentMethod != null && validTestMethod && isTestClass) {
-////				System.out.println("PARAM n " + n.toString());
-//				if (n.getType().asString().equals("File") || n.getType().asString().equals("Path")) {
-//					methodVariables.add(n.getNameAsString());
-//
-//				}
-//			}
-//			super.visit(n, arg);
-//
-//		}
+		@Override
+		public void visit(MethodDeclaration n, Void arg) {
+			System.out.println("");
+			System.out.println("MethodDeclaration: " + n.getNameAsString());
+
+			if (isTestClass) {
+
+				switch (state) {
+				case "analyze": {
+					currentMethod = n;
+					this.allMethodsData.add(new IntelMethod(n.getNameAsString(), false));
+					this.allClassMethods.add(n.getNameAsString());
+
+					ASTHelper.addParams(n, methodVariables); // Check if necessary
+					initTestSmells(n);
+					testMethod = new TestMethod(n.getNameAsString(), n.getBegin().get().line);
+					testMethod.setHasFlaky(false); // default value is false (i.e. no smell)
+					break;
+				}
+				}
+
+				super.visit(n, arg);
+
+				System.out.println("");
+				switch (state) {
+				case "analyze": {
+
+					testMethod.setHasFlaky(hasFlaky);
+					if (hasFlaky) {
+						testSmells.add(testSmell);
+						flakyElementList.add(testMethod);
+						ASTHelper.setMethodStatusFlaky(n, allMethodsData, true);
+					}
+					testSmell = new TestSmell();
+					hasFlaky = false;
+					currentMethod = null;
+					methodVariables = new HashSet<>();
+					okVariables = new ArrayList<>();
+					break;
+				}
+
+				// Analyze if a() calls a smelly method b(), then a is also smelly().
+				case "analyzeRelationState": {
+					System.out.println("analyzeRelationState after");
+					initTestSmells(n);
+
+					testMethod = new TestMethod(n.getNameAsString(), n.getBegin().get().line);
+					testMethod.setHasFlaky(false);
+					hasFlaky = analyzeRelations(n);
+
+					if (hasFlaky) {
+						testMethod.setHasFlaky(true);
+						testSmells.add(testSmell);
+						flakyElementList.add(testMethod);
+					}
+					hasFlaky = false;
+					testSmell = new TestSmell();
+					testMethod.addDataItem("ResourceOptimismCount", "0");
+					break;
+
+				}
+				}
+
+			}
+		}
+
+		@Override
+		public void visit(ObjectCreationExpr n, Void arg) {
+			if (currentMethod != null && state.equals("analyze")) {
+				System.out.println("ObjectCreationExpr: " + n);
+
+				// If han object is created as an rvalue then in an variableDeclarator, then set
+				// it imediately to hasFlaky.
+				if (n.getParentNode().isPresent()) {
+					System.out.println("ObjectCreationExpr isPresent: " + n);
+
+					if (!(n.getParentNode().get() instanceof VariableDeclarator)) {
+						System.out.println("hn: " + n);
+						if (n.getType().asString().equals("File") || n.getType().asString().equals("Path")) {
+							hasFlaky = true;
+						}
+					}
+				}
+			}
+			super.visit(n, arg);
+		}
 
 		@Override
 		public void visit(VariableDeclarator n, Void arg) {
-//			if (currentMethod != null && validTestMethod && isTestClass) {
-			if (currentMethod != null && isTestClass) {
-
+			if (currentMethod != null && state.equals("analyze")) {
 				if (n.getTypeAsString().equals("File") || n.getTypeAsString().equals("Path")) {
-
 					methodVariables.add(n.getNameAsString());
 				}
 			}
-//			else {
-//				if (n.getTypeAsString().equals("File") || n.getTypeAsString().equals("Path")) {
-//					System.out.println("VariableDeclarator: " + n.getTypeAsString());
-//
-//					System.out.println("ADDS from class1");
-//					classVariables.add(n.getNameAsString());
-//				}
-//			}
 			super.visit(n, arg);
 		}
 
 		@Override
 		public void visit(FieldDeclaration n, Void arg) {
-			if (isTestClass) {
+			if (currentMethod == null && state.equals("analyze")) {
 				System.out.println("FieldDeclaration: " + n);
 				for (VariableDeclarator variableDeclarator : n.getVariables()) {
 					if (variableDeclarator.getTypeAsString().equals("File")
 							|| variableDeclarator.getTypeAsString().equals("Path")) {
-						System.out.println("Adds from class2");
 						classVariables.add(variableDeclarator.getNameAsString());
 					}
 				}
 			}
-
 			super.visit(n, arg);
 		}
 
 		@Override
 		public void visit(MethodCallExpr n, Void arg) {
-			System.out.println("MethodCallExpr: " + n);
-			System.out.println("getNameAsString: " + n.getNameAsString());
-			System.out.println("getArguments: " + n.getArguments());
-			System.out.println("getChildNodes: " + n.getChildNodes());
-			System.out.println("methodVariables: " + methodVariables);
-			System.out.println("classVars: " + classVariables);
-			System.out.println("okVars: " + this.okVariables);
-			System.out.println(" ");
-//			if (currentMethod != null && validTestMethod && isTestClass) {
-			if (currentMethod != null && isTestClass) {
+			if (currentMethod != null && state.equals("analyze")) {
+				String callExpr = n.getNameAsString();
 
+				System.out.println("MethodCallExpr: " + callExpr);
 
-				if (n.getNameAsString().equals("exists") || n.getNameAsString().equals("isFile")
-						|| n.getNameAsString().equals("canExecute") || n.getNameAsString().equals("canRead")
-						|| n.getNameAsString().equals("canWrite") || n.getNameAsString().equals("notExists")
-						|| n.getNameAsString().equals("isWritable") || n.getNameAsString().equals("isReadable")
-						|| n.getNameAsString().equals("isExecutable")) {
+				// Needed for checking smelly relationships
+
+//				if (n.getScope().isPresent()) { // works equally good as section below with checkIfClassMember
+				String base = ASTHelper.checkIfClassMember(n);
+				if (base.equals("empty")) {
+					System.out.println("BASE: " + base);
+					IntelMethod methodData = ASTHelper.getMethod(currentMethod.getNameAsString(), this.allMethodsData);
+					if (!n.getNameAsString().equals(currentMethod.getNameAsString())) {
+						System.out.println("methodData: " + n.getNameAsString());
+						methodData.addMethod(n.getNameAsString());
+					}
+				}
+
+				if (callExpr.equals("exists") || callExpr.equals("isFile") || callExpr.equals("canExecute")
+						|| callExpr.equals("canRead") || callExpr.equals("canWrite") || callExpr.equals("notExists")
+						|| callExpr.equals("isWritable") || callExpr.equals("isReadable")
+						|| callExpr.equals("isExecutable")) {
+
+					// Here we add referenced variables to okVariables so if they are used later
+					// they will not indicate resource optimism if used.
+
 					if (n.getScope().isPresent()) {
-
-						String currentVar = n.getScope().get().toString();
-						System.out.println("SCOPE: " + n.getScope().get().toString());
-						System.out.println("instanceOf: " + n.getScope().get().toString());
-
 						if (n.getScope().get() instanceof NameExpr) {
-							System.out.println("SCOPEPRESENT: " + methodVariables);
-
-							System.out.println("interesting" + ((NameExpr) n.getScope().get()).getNameAsString());
-
 							String okVar = ((NameExpr) n.getScope().get()).getNameAsString();
+							System.out.println("OKVAR: " + okVar);
 
-							if (methodVariables.contains(((NameExpr) n.getScope().get()).getNameAsString())) {
-								System.out.println("REMOVE1: " + methodVariables);
-								System.out.println("okVar: " + okVar);
-								System.out.println("namexpr: " + ((NameExpr) n.getScope().get()).getNameAsString());
-
-								this.methodVariables.remove(((NameExpr) n.getScope().get()).getNameAsString());
+							// Check for variable f in f.exists()
+							if (methodVariables.contains(okVar)) {
+								this.methodVariables.remove(okVar);
 								okVariables.add(okVar);
-
-								System.out.println("methodVariables: " + methodVariables);
-
-							} else if (classVariables.contains(((NameExpr) n.getScope().get()).getNameAsString())) {
-								System.out.println("YOLO");
+							} else if (classVariables.contains(okVar)) {
 								okVariables.add(okVar);
+								this.classVariables.remove(okVar); // Remove here as well?....
+
+								// Check for Path p in Files.isExecutable(p)
 							} else {
-								System.out.println("it's an else: " + n.getNameAsString());
-
 								if (n.getArguments().size() > 0) {
-									String path = n.getArguments().get(0).toString();
-									if (methodVariables.contains(path) || classVariables.contains(path)) {
-										System.out.println("ITs ok mario: " + path);
-										okVariables.add(path);
-										methodVariables.remove(path);
+									// Maybe should do line below like this with n.getScope().get() instanceof
+									// NameExpr style instead of indexing arguments.
+									for (Expression expr : n.getArguments()) {
+										String path = expr.toString();
+										System.out.println("PATH: " + path);
+										if (methodVariables.contains(path) || classVariables.contains(path)) {
+											okVariables.add(path);
+											methodVariables.remove(path);
+											classVariables.remove(path);
+										}
 									}
 
 								}
-
 							}
 						}
+					}
+				}
+
+				// other method call that may be using optimistic resources
+
+				else if (n.getScope().isPresent()) {
+
+					// Maybe use conventional method to get the arguments?
+					// 1. use nameexpr or something similar
+					// 2. always just check n.getArguments() ???
+//					//	    long fsize = fs.getFileStatus(path).getLen(); dont capture path.
+
+					String referencedVariable = null;
+					if (n.getChildNodes().size() > 1) {
+
+						// a.instance.mm() not working with this method. Need to use, get scoep,
+						// instance of namexpr
+						referencedVariable = n.getChildNodes().get(0).toString();
 
 					}
-				} else if (n.getChildNodes().size() > 1) {
 
-					System.out.println("water");
-					String referencedVariable = n.getChildNodes().get(0).toString();
 					String callerFunction = n.getChildNodes().get(1).toString();
+
+					System.out.println("simplename: " + n.getChildNodes().get(0).getClass().getSimpleName());
+					System.out.println("simplename22: " + n.getChildNodes().get(1).getClass().getSimpleName());
+					System.out.println("referencedVariable: " + referencedVariable);
+
+					System.out.println("callerFunction : " + callerFunction);
+					System.out.println("n : " + n);
+
 					ArrayList<String> args = new ArrayList<String>();
-					if (n.getArguments().size() > 0) {
-						for (Expression argument : n.getArguments()) {
+
+					// Goes here if for instance we call object.method(params);
+					// Then we need to check if object is file/path or any of the params are
+					// file/path
+
+					// TODO Can reduce theese two loops to 1 loop.
+					if (n.getScope().get() instanceof MethodCallExpr) {
+						MethodCallExpr method = ((MethodCallExpr) n.getScope().get());
+						for (Expression argument : method.getArguments()) {
+							System.out.println(argument);
 							args.add(argument.toString());
 						}
 					}
 
+					// Check if path/file is used as an argument
 					for (String argument : args) {
-						if (classVariables.contains(argument) && !validCalls.contains(argument)
-								&& !okVariables.contains(argument)) {
-							System.out.println("GOESHERE");
-
-							hasFlaky = true;
-						} else if (methodVariables.contains(argument) && !okVariables.contains(argument)) {
-
+						System.out.println("args: " + args);
+						if ((classVariables.contains(argument) && !okVariables.contains(argument))
+								|| ((methodVariables.contains(argument) && !okVariables.contains(argument)))) {
 							hasFlaky = true;
 						}
 					}
+					// Check if the file/path is called such as file.delete();
+					// Use nameExpr....find file... and then check for referencedVariable lol
+					if (referencedVariable != null) {
+						if ((classVariables.contains(referencedVariable) && !okVariables.contains(referencedVariable))
+								|| (methodVariables.contains(referencedVariable)
+										&& !okVariables.contains(referencedVariable))) {
+							hasFlaky = true;
 
-					if (classVariables.contains(referencedVariable) && !validCalls.contains(callerFunction)
-							&& !okVariables.contains(referencedVariable)) {
+						}
+					}
+				} else {
 
-						hasFlaky = true;
-					} else if (methodVariables.contains(referencedVariable)
-							&& !okVariables.contains(referencedVariable)) {
+					// check for parameters inside a normal method such as: timeWrite(path,
+					// appendable, options.keyLength,..)
+					// Eliminate double loops.
 
-						hasFlaky = true;
-//						methodVariables.add(referencedVariable);
+					// TODO can also reduce these two loops to one loop, use Util.checkforboool for
+					// int/bool
+					System.out.println("WHaaaO1 " + n.getClass().getSimpleName());
+					ArrayList<String> args = new ArrayList<String>();
+					if (n instanceof MethodCallExpr) {
+						for (Expression argument : n.getArguments()) {
+							System.out.println(argument);
+							args.add(argument.toString());
+						}
+					}
+					for (String argument : args) {
+						System.out.println("args: " + args);
+						if ((classVariables.contains(argument) && !okVariables.contains(argument))
+								|| ((methodVariables.contains(argument) && !okVariables.contains(argument)))) {
+							hasFlaky = true;
+						}
 					}
 				}
-
-//				else if (n.getNameAsString().equals("isWritable") || n.getNameAsString().equals("isReadable")
-//						|| n.getNameAsString().equals("isExecutable") || n.getNameAsString().equals("exists")) {
-//					if (n.getScope().isPresent()) {
-//						if (n.getScope().get() instanceof NameExpr) {
-//							System.out.println("SCOPE1: " + n.getScope().get().toString());
-//
-//						}
-//
-//					}
-//
-//				}
 			}
 			super.visit(n, arg);
+		}
 
+		public boolean analyzeRelations(MethodDeclaration n) {
+
+			for (String method : allClassMethods) {
+				if (method.equals(n.getNameAsString())) {
+					if (!ASTHelper.checkIfFlaky(method, allMethodsData)) {
+						IntelMethod intelMethod = ASTHelper.getMethod(method, allMethodsData);
+						if (!intelMethod.isFlaky()) {
+							for (String call : intelMethod.getMethods()) {
+								if (ASTHelper.checkIfFlaky(call, allMethodsData)) {
+									return true;
+								}
+							}
+						}
+					}
+				}
+			}
+			return false;
 		}
 	}
 }
 
-//@Override
-//public void visit(ClassOrInterfaceDeclaration n, Void arg) {
+//ArrayList<String> args = new ArrayList<String>();
+//if (n.getArguments().size() > 0) {
+//	for (Expression argument : n.getArguments()) {
+//		System.out.println("args: " + argument.toString());
 //
-//	testSmell.setTestClass(n.getNameAsString());
+//		args.add(argument.toString());
+//	}
+//}
+
+//Is done in ASTHelper.addParams(n, methodVariables);
+//@Override
+//public void visit(Parameter n, Void arg) {
+//
+//	if (currentMethod != null && state.equals("initState")) {
+//		System.out.println("Parameter: " + n);
+////		String key = currentMethod.getNameAsString();
+////		Set<String> varDeclExprArray = varDeclExpr.get(key);
+////		String param = ASTHelper.getParameter(n);
+////		if (!param.equals("")) {
+////			varDeclExprArray.add(param);
+////		}
+//	}
 //	super.visit(n, arg);
+//
 //}

@@ -3,8 +3,6 @@ package flakyhoover;
 import java.util.ArrayList;
 import java.util.List;
 
-import util.TestSmell;
-
 public class TestFile {
 	private String app, testFilePath, productionFilePath;
 	private List<AbstractFlaky> flakyInst;
@@ -40,15 +38,14 @@ public class TestFile {
 						System.out.println("LIST: " + list.size());
 
 						for (MetaData d : list) {
-							if(d.getIsTestRunWar()) {
+							if (d.getIsTestRunWar()) {
 								System.out.println("ISFLAKY: " + d.getIsFlaky());
 								System.out.println("");
-								System.out.println("getLine1: "+ d.getLine1());
+								System.out.println("getLine1: " + d.getLine1());
 								System.out.println("getLine2: " + d.getLine2());
 								System.out.println("getLineInfo1: " + d.getLineInfo1());
 								System.out.println("getLineInfo2: " + d.getLineInfo2());
-							}
-							else if (d.getIsFlaky()) {
+							} else if (d.getIsFlaky()) {
 //								System.out.println("");
 //								System.out.println(d.getExpr());
 //								System.out.println(d.getLine());
@@ -74,6 +71,7 @@ public class TestFile {
 	public String getProductionFilePath() {
 		return productionFilePath;
 	}
+
 	public String getTestFilePathWithDot() {
 		return testFilePath.replaceAll("\\\\", ".");
 	}
@@ -96,7 +94,6 @@ public class TestFile {
 		this.productionFilePath = productionFilePath;
 		this.flakyInst = new ArrayList<>();
 	}
-	
 
 	public void addFlakyInst(AbstractFlaky flaky) {
 		flakyInst.add(flaky);
@@ -123,11 +120,25 @@ public class TestFile {
 		return getProductionFileName().substring(0, lastIndex);
 	}
 
+	public String getProductionFileNameWithoutExtensiondot() {
+		int lastIndex = getProductionFileNameFromOrg().lastIndexOf(".");
+		if (lastIndex == -1)
+			return "";
+//		return getProductionFileName().substring(0, lastIndex);
+		return getProductionFileNameFromOrg().substring(0, lastIndex);
+	}
+
 	public String getProductionFileName() {
 		int lastIndex = productionFilePath.lastIndexOf("\\");
 		if (lastIndex == -1)
 			return "";
 		return productionFilePath.substring(lastIndex + 1, productionFilePath.length());
+	}
+
+	public String getProductionFileNameFromOrg() {
+		int last = getTestFilePathWithDot().length();
+		int from = getTestFilePathWithDot().indexOf("org");
+		return getTestFilePathWithDot().substring(from, last);
 	}
 
 	public String getRelativeTestFilePath() {

@@ -9,10 +9,7 @@ import java.util.stream.Collectors;
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 
-import flakes.ConditionalTestLogic;
-import flakes.FireAndForget;
-import flakes.IndirectTesting;
-import flakes.ResourceOptimism;
+import flakes.SharedFixture;
 
 public class FlakyDetector {
 
@@ -28,12 +25,14 @@ public class FlakyDetector {
 //		flakyInst.add(new FlakyAsync());
 //		flakyInst.add(new CondTimeout());
 //		flakyInst.add(new TestRunWar_spec());
-		
-		flakyInst.add(new ConditionalTestLogic());
-		flakyInst.add(new FireAndForget());
-//		flakyInst.add(new TestRunWar());
-		flakyInst.add(new ResourceOptimism());
-		flakyInst.add(new IndirectTesting());
+//		flakyInst.add(new TestRunWarNew());
+//		flakyInst.add(new ResourceOptimism_old());
+
+//		flakyInst.add(new ConditionalTestLogic());
+//		flakyInst.add(new FireAndForget());
+//		flakyInst.add(new ResourceOptimism());
+//		flakyInst.add(new IndirectTesting());
+		flakyInst.add(new SharedFixture());
 
 //		flakyInst.add(new ResourceLeak());
 
@@ -46,8 +45,9 @@ public class FlakyDetector {
 	public TestFile detect(TestFile testFile) throws FileNotFoundException {
 		CompilationUnit productionFileCompilationUnit = null;
 		FileInputStream testFileInputStream, productionFileInputStream;
-
+//		System.out.println("TESTFILE.GETFILEPATH: " + testFile.getTestFilePath());
 		testFileInputStream = new FileInputStream(testFile.getTestFilePath());
+//		System.out.println("testFileInputStream " + testFileInputStream != null);
 
 //		TypeSolver reflectionTypeSolver = new ReflectionTypeSolver();
 
@@ -92,12 +92,11 @@ public class FlakyDetector {
 //			System.out.println("\n");
 //			System.out.println("Running: " + flaky.getFlakyName());
 //			System.out.println("path: " + testFile.getTestFilePathWithDot());
-			
+
 			try {
 				flaky.runAnalysis(testFileCompilationUnit, productionFileCompilationUnit,
 						testFile.getTestFilePathWithDot(), testFile.getApp());
-				
-				
+
 			} catch (FileNotFoundException e) {
 				testFile.addFlakyInst(null);
 				continue;

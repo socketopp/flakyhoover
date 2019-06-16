@@ -4353,3 +4353,12 @@ double
 char
 String
 boolean
+byte
+short[]
+int[]
+long[]
+float[]
+double[]
+char[]
+String[]
+boolean[]
