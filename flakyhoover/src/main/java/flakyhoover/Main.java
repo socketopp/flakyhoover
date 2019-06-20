@@ -14,16 +14,20 @@ import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 
+import flakes.ConditionalTestLogic;
 import util.DocumentWriter;
 import util.Util;
 
 public class Main {
 
 //	private static final String FLAKY_FILE_PATH = "src\\main\\java\\lab\\HFileArchiveTestingUtil.java";
-//	private static final String FLAKY_FILE_PATH = "src\\main\\java\\lab\\JoinTest.java";
-//	private static final String FLAKY_FILE_PATH = "src\\main\\java\\lab\\ClientRegistryTest.java";
+//	private static final String TEST_INDIRECT = "src\\main\\java\\lab\\JoinTest.java";
+//	private static final String TEST_INDIRECT = "src\\main\\java\\lab\\ClientRegistryTest.java";
 //	private static final String FLAKY_FILE_PATH = "src\\main\\java\\lab\\TestFlakyExample.java";
+//	private static final String TEST_INDIRECT = "src\\main\\java\\lab\\TestRunWarTest.java";
+//	private static final String TEST_INDIRECT = "src\\main\\java\\lab\\TestPluginSystem.java";
 	private static final String TEST_INDIRECT = "src\\main\\java\\lab\\TestFlakyExample.java";
+//	private static final String TEST_INDIRECT = "src\\main\\java\\lab\\TestConditionalTestLogic.java";
 //	private static final String TEST_INDIRECT = "src\\main\\java\\lab\\TestGenerator.java";
 //	private static final String TEST_CON_PATH = "src\\main\\java\\lab\\TestContent.java";
 //	private static final String TEST_INDIRECT = "src\\main\\java\\lab\\TestHTMLLanguageParser.java";
@@ -148,7 +152,7 @@ public class Main {
 ////		
 //		Map<TestFile, ArrayList<String>> class_method = new HashMap<TestFile, ArrayList<String>>();
 //
-		ArrayList<TestFile> testFiles = new ArrayList<TestFile>();
+//		ArrayList<TestFile> testFiles = new ArrayList<TestFile>();
 
 //		for (String project : projects) {
 //			ArrayList<String> allFiles = Util.getAllFiles(project);
@@ -209,24 +213,32 @@ public class Main {
 //		if(isTestClass) getAllFiles if(path.toLowerCase().contains("test")) : 27253 methods, 4175 testclasses
 //		if(isTestClass) && isValidTestMethod getAllFiles if(path.toLowerCase().contains("test")) :  14952 test methods from  4175 test classes
 
+//		List<String> list = new ArrayList<String>();
+//		list.add("printStackTrace");
+//		String s = "e.printStackTrace()";
+//		System.out.println(s.contains(list.get(0)));
+
+//		String s = "firstServer.setHServerInfo(new HServerInfo(hsi.getServerAddress(), hsi.getInfoPort(), hsi.getHostname()));";
+
 //		fffff
-//
-//		flakyDetector = new FlakyDetector();
-//		TestFile testfile = new TestFile("beaconsperth", TEST_INDIRECT, "");
-////		TestFile testfile = new TestFile("beaconsperth", FLAKY_FILE_PATH, "");
-//		testfile = flakyDetector.detect(testfile);
-//
-//		ArrayList<ArrayList<String>> data = DocumentWriter.prepareData(testfile);
-//		for (ArrayList<String> arrayList : data) {
-//
-//			System.out.println("res: " + arrayList.toArray());
-//			for (String s : arrayList) {
-//				System.out.println("res: " + s);
-//
-//			}
-//			System.out.println("");
-//			System.out.println("");
-//		}
+
+//		flakyDetector = new FlakyDetector(true, new FireAndForget());
+		flakyDetector = new FlakyDetector(true, new ConditionalTestLogic());
+//		flakyDetector = new FlakyDetector(true, new SharedFixture());
+		TestFile testfile = new TestFile("beaconsperth", TEST_INDIRECT, "");
+//		TestFile testfile = new TestFile("beaconsperth", FLAKY_FILE_PATH, "");
+		testfile = flakyDetector.detect(testfile);
+
+		ArrayList<ArrayList<String>> data = DocumentWriter.prepareData(testfile);
+		for (ArrayList<String> arrayList : data) {
+
+			for (String s : arrayList) {
+				System.out.println("res: " + s);
+
+			}
+			System.out.println("");
+			System.out.println("");
+		}
 
 		// Master
 //		testfile.printResult();

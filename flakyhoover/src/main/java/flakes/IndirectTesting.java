@@ -116,6 +116,8 @@ public class IndirectTesting extends AbstractFlaky {
 			this.state = state;
 		}
 
+		// TODO
+		// Must check class if they exist in project structure,
 		@Override
 		public void visit(ClassOrInterfaceDeclaration n, Void arg) {
 			System.out.println("ClassOrInterfaceDeclaration: " + n.getNameAsString());

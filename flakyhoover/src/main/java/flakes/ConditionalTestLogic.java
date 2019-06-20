@@ -7,16 +7,22 @@ import java.util.List;
 import java.util.Set;
 
 import com.github.javaparser.ast.CompilationUnit;
-import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.body.VariableDeclarator;
+import com.github.javaparser.ast.expr.ArrayAccessExpr;
+import com.github.javaparser.ast.expr.AssignExpr;
 import com.github.javaparser.ast.expr.ConditionalExpr;
+import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.MethodCallExpr;
-import com.github.javaparser.ast.stmt.BlockStmt;
+import com.github.javaparser.ast.expr.NameExpr;
+import com.github.javaparser.ast.expr.VariableDeclarationExpr;
 import com.github.javaparser.ast.stmt.ForEachStmt;
 import com.github.javaparser.ast.stmt.ForStmt;
 import com.github.javaparser.ast.stmt.IfStmt;
 import com.github.javaparser.ast.stmt.SwitchStmt;
+import com.github.javaparser.ast.stmt.TryStmt;
 import com.github.javaparser.ast.stmt.WhileStmt;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 
@@ -77,7 +83,7 @@ public class ConditionalTestLogic extends AbstractFlaky {
 
 		private MethodDeclaration currentMethod = null;
 		private boolean hasFlaky = false;
-		private int conditionCount, ifCount, switchCount, forCount, foreachCount, whileCount = 0;
+		private int conditionCount, ifCount, switchCount, forCount, foreachCount, whileCount, tryStmt = 0;
 		TestMethod testMethod;
 		private TestSmell testSmell = new TestSmell();
 		private boolean isTestClass = false;
@@ -85,6 +91,7 @@ public class ConditionalTestLogic extends AbstractFlaky {
 		private String flakinessType = "test-order-dependency";
 		private Set<IntelMethod> allMethodsData = new HashSet<IntelMethod>();
 		private Set<String> allClassMethods = new HashSet<String>();
+		private Set<String> allContainers = new HashSet<String>();
 
 		private void initTestSmells(MethodDeclaration n) {
 			testSmell.setFlakinessType(flakinessType);
@@ -111,7 +118,8 @@ public class ConditionalTestLogic extends AbstractFlaky {
 		@Override
 		public void visit(MethodDeclaration n, Void arg) {
 
-			if (isTestClass) {
+			boolean hasAssert = n.getBody().toString().toLowerCase().contains("assert");
+			if (isTestClass && hasAssert) {
 
 				switch (state) {
 				case "analyze": {
@@ -133,8 +141,10 @@ public class ConditionalTestLogic extends AbstractFlaky {
 
 				switch (state) {
 				case "analyze": {
+
 					testMethod.setHasFlaky(conditionCount > 0 | ifCount > 0 | switchCount > 0 | foreachCount > 0
-							| forCount > 0 | whileCount > 0);
+							| forCount > 0 | whileCount > 0 | tryStmt > 0);
+
 					testMethod.addDataItem("ConditionCount", String.valueOf(conditionCount));
 					testMethod.addDataItem("IfCount", String.valueOf(ifCount));
 					testMethod.addDataItem("SwitchCount", String.valueOf(switchCount));
@@ -152,6 +162,7 @@ public class ConditionalTestLogic extends AbstractFlaky {
 					currentMethod = null;
 					hasFlaky = false;
 					conditionCount = 0;
+					tryStmt = 0;
 					ifCount = 0;
 					switchCount = 0;
 					forCount = 0;
@@ -191,16 +202,7 @@ public class ConditionalTestLogic extends AbstractFlaky {
 		@Override
 		public void visit(IfStmt n, Void arg) {
 			if (currentMethod != null && state.equals("analyze")) {
-
 				System.out.println("IfStmt");
-
-				System.out.println();
-//				System.out.println(n.hasElseBlock());
-//				System.out.println(n.hasCascadingIfStmt());
-//				System.out.println(n.hasElseBranch());
-//				System.out.println(n.hasThenBlock());
-//				System.out.println(n.getCondition());
-
 				ifCount++;
 			}
 			super.visit(n, arg);
@@ -208,16 +210,19 @@ public class ConditionalTestLogic extends AbstractFlaky {
 		}
 
 		@Override
-		public void visit(BlockStmt n, Void arg) {
+		public void visit(TryStmt n, Void arg) {
 
+			super.visit(n, arg);
 			if (currentMethod != null && state.equals("analyze")) {
-//				System.out.println("BlockStmt: " + n.getStatements());
-				Node nn = n.getParentNode().get();
-				if (nn.getClass().getSimpleName().equals("IfStmt") && n.toString().contains("assert")) {
 
+				String finallyBlock = n.getFinallyBlock().toString();
+				if (n.getTryBlock().toString().contains("assert") && n.getFinallyBlock().toString().contains("remove")
+						|| finallyBlock.contains("delete") || finallyBlock.contains("close")
+						|| finallyBlock.contains("stop") || finallyBlock.contains("shutdown")
+						|| finallyBlock.contains("drop") || finallyBlock.contains("clean")) {
+
+					tryStmt++;
 				}
-
-				System.out.println("NN: " + nn.getClass().getSimpleName());
 			}
 			super.visit(n, arg);
 
@@ -244,39 +249,144 @@ public class ConditionalTestLogic extends AbstractFlaky {
 		@Override
 		public void visit(ForStmt n, Void arg) {
 
-			super.visit(n, arg);
-			if (currentMethod != null) {
+			if (currentMethod != null && state.equals("analyze")) {
+
+				// Found a possible harmful for-loop.
 				forCount++;
+				if (n.getBody().toString().contains("assert")) {
+					NameExpr counter = null;
+					// Get the counter inside the for-loop condition
+					if (n.findFirst(NameExpr.class).isPresent()) {
+						counter = n.findFirst(NameExpr.class).get();
+					}
+
+					// TODO For next commit refactor these conditions below
+					// Check for arrays
+					if (n.getBody().findFirst(AssignExpr.class).isPresent()
+							|| n.getBody().findFirst(VariableDeclarationExpr.class).isPresent()) {
+
+						if (n.getBody().findFirst(ArrayAccessExpr.class).isPresent()) {
+
+							ArrayAccessExpr arrayAccessExpr = n.getBody().findFirst(ArrayAccessExpr.class).get()
+									.asArrayAccessExpr();
+
+							Expression index = arrayAccessExpr.getIndex();
+							String containerName = arrayAccessExpr.getName().toString();
+
+							System.out.println(this.allContainers.contains(containerName));
+
+							if (this.allContainers.contains(containerName)) {
+
+								System.out.println("Counter: " + counter);
+								System.out.println("index: " + index);
+								if (index.toString().contains(counter.toString())) {
+									if (!n.findFirst(IfStmt.class).isPresent()) {
+										forCount--;
+									}
+								}
+							}
+							// Check for lists, arraylist, sets and vectors
+						} else if (n.getBody().findFirst(MethodCallExpr.class).isPresent()) {
+							MethodCallExpr methodCallExpr = n.getBody().findFirst(MethodCallExpr.class).get()
+									.asMethodCallExpr();
+
+							if (methodCallExpr.getScope().isPresent()) {
+								if (methodCallExpr.getScope().get() instanceof NameExpr) {
+
+									String containerName = ((NameExpr) methodCallExpr.getScope().get())
+											.getNameAsString();
+
+									if (this.allContainers.contains(containerName)) {
+										System.out.println(methodCallExpr.getNameAsString());
+										if (methodCallExpr.getNameAsString().equals("get")
+												&& methodCallExpr.getArguments().size() == 1) {
+
+											String index = methodCallExpr.getArguments().get(0).toString();
+											if (index.toString().contains(counter.toString())) {
+												if (!n.findFirst(IfStmt.class).isPresent()) {
+													forCount--;
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+
 			}
+			super.visit(n, arg);
+
 		}
 
+		// TODO Investigate the forEach loop as well? Work in smiliar ways as normal
+		// forloop?
 		@Override
 		public void visit(ForEachStmt n, Void arg) {
 			super.visit(n, arg);
-			if (currentMethod != null) {
+			if (currentMethod != null && state.equals("analyze")) {
 				foreachCount++;
 			}
 		}
 
+		// TODO Investigate the While loop as well? Work in smiliar ways as normal
 		@Override
 		public void visit(WhileStmt n, Void arg) {
 			super.visit(n, arg);
-			if (currentMethod != null) {
+			if (currentMethod != null && state.equals("analyze")) {
 				whileCount++;
 			}
+		}
+
+		@Override
+		public void visit(FieldDeclaration n, Void arg) {
+			if (isTestClass && state.equals("analyze")) {
+				for (VariableDeclarator varDec : n.getVariables()) {
+
+					String name = varDec.getNameAsString();
+					boolean type = varDec.getType().isArrayType();
+					String classType = varDec.getTypeAsString();
+
+					if (type || classType.toLowerCase().contains("list") || classType.toLowerCase().contains("set")
+							|| classType.toLowerCase().contains("vector")) {
+						allContainers.add(name);
+					}
+				}
+			}
+			super.visit(n, arg);
+		}
+
+		@Override
+		public void visit(VariableDeclarationExpr n, Void arg) {
+			if (currentMethod != null && state.equals("analyze")) {
+
+				for (VariableDeclarator varDec : n.getVariables()) {
+					String name = varDec.getNameAsString();
+					boolean type = varDec.getType().isArrayType();
+					String classType = varDec.getTypeAsString();
+
+					if (type || classType.toLowerCase().contains("list") || classType.toLowerCase().contains("set")
+							|| classType.toLowerCase().contains("vector")) {
+
+						allContainers.add(name);
+					}
+				}
+
+			}
+			super.visit(n, arg);
+
 		}
 
 		@Override
 		public void visit(MethodCallExpr n, Void arg) {
 
 			if (currentMethod != null && state.equals("analyze")) {
-				System.out.println("MethodCallExpr: " + n.getNameAsString());
 				String base = ASTHelper.checkIfClassMember(n);
 
 				if (base.equals("empty")) {
 					IntelMethod methodData = ASTHelper.getMethod(currentMethod.getNameAsString(), this.allMethodsData);
 					if (!n.getNameAsString().equals(currentMethod.getNameAsString())) {
-						System.out.println("methodData: " + n.getNameAsString());
 						methodData.addMethod(n.getNameAsString());
 					}
 				}
@@ -303,5 +413,4 @@ public class ConditionalTestLogic extends AbstractFlaky {
 			return false;
 		}
 	}
-
 }

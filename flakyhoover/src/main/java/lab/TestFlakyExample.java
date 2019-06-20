@@ -1,11 +1,11 @@
 package lab;
 
-import java.io.BufferedReader;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.omg.CORBA.Request;
+import java.util.List;
 
 public class TestFlakyExample {
+
+	private List allAirportIds;
+	private List allFlights;
 
 //	File f1;
 //	private int i = 0;
@@ -89,6 +89,509 @@ public class TestFlakyExample {
 //	}
 //	test(a, b);
 //	f = new File();
+//	public void test() {
+//		if (conf != newConf) {
+//			synchronized (conf) {
+//				for (Map.Entry<String, String> entry : conf) {
+//					if ((entry.getKey().matches("hcat.*")) && (newConf.get(entry.getKey()) == null)) {
+//						newConf.set(entry.getKey(), entry.getValue());
+//					}
+//				}
+//			}
+//			conf = newConf;
+//		}
+//	}
+//}
+
+//	public void testRsReportsWrongServerName() throws Exception {
+//		MiniHBaseCluster cluster = TEST_UTIL.getHBaseCluster();
+//		MiniHBaseClusterRegionServer firstServer = (MiniHBaseClusterRegionServer) cluster.getRegionServer(0);
+//		HRegionServer secondServer = cluster.getRegionServer(1);
+//
+//		HServerInfo hsi = firstServer.getServerInfo();
+//		firstServer.setHServerInfo(new HServerInfo(hsi.getServerAddress(), hsi.getInfoPort(), hsi.getHostname()));
+//		// Sleep while the region server pings back
+//		Thread.sleep(2000);
+//		assertTrue(firstServer.isOnline());
+//		assertEquals(2, cluster.getLiveRegionServerThreads().size());
+//
+//		secondServer.getHServerInfo().setServerAddress(new HServerAddress("0.0.0.0", 60010));
+//		Thread.sleep(2000);
+//		assertTrue(secondServer.isOnline());
+//		assertEquals(1, cluster.getLiveRegionServerThreads().size());
+//	}
+//
+//	@Test(timeout = 180000)
+//	public void notFlakytestRsReportsWrongServerName() throws Exception {
+//		MiniHBaseCluster cluster = TEST_UTIL.getHBaseCluster();
+//		MiniHBaseClusterRegionServer firstServer = (MiniHBaseClusterRegionServer) cluster.getRegionServer(0);
+//		HRegionServer secondServer = cluster.getRegionServer(1);
+//		HServerInfo hsi = firstServer.getServerInfo();
+//		firstServer.setHServerInfo(new HServerInfo(hsi.getServerAddress(), hsi.getInfoPort(), hsi.getHostname()));
+//
+//		cluster.waitOnRegionServer(0);
+//		assertEquals(2, cluster.getLiveRegionServerThreads().size());
+//
+//		secondServer.getHServerInfo().setServerAddress(new HServerAddress("0.0.0.0", 60010));
+//		cluster.waitOnRegionServer(0);
+//		assertEquals(1, cluster.getLiveRegionServerThreads().size());
+//	}
+//
+//	@Test
+//	public void testContinuousScheduling() throws Exception {
+//		// set continuous scheduling enabled
+//		FairScheduler fs = new FairScheduler();
+//		Configuration conf = createConfiguration();
+//		conf.setBoolean(FairSchedulerConfiguration.CONTINUOUS_SCHEDULING_ENABLED, true);
+//		fs.reinitialize(conf, resourceManager.getRMContext());
+//		Assert.assertTrue("Continuous scheduling shouldbe enabled.", fs.isContinuousSchedulingEnabled());
+//
+//		// Add one node
+//		RMNode node1 = MockNodes.newNodeInfo(1, Resources.createResource(8 * 1024, 8), 1, "127.0.0.1");
+//		NodeAddedSchedulerEvent nodeEvent1 = new NodeAddedSchedulerEvent(node1);
+//		fs.handle(nodeEvent1);
+//
+//		// available resource
+//		Assert.assertEquals(fs.getClusterCapacity().getMemory(), 8 * 1024);
+//		Assert.assertEquals(fs.getClusterCapacity().getVirtualCores(), 8);
+//
+//		ApplicationAttemptId appAttemptId = createAppAttemptId(this.APP_ID++, this.ATTEMPT_ID++);
+//		fs.addApplication(appAttemptId, "queue11", "user11");
+//		List<ResourceRequest> ask = new ArrayList<ResourceRequest>();
+//		ResourceRequest request = createResourceRequest(1024, 1, ResourceRequest.ANY, 1, 1, true);
+//		ask.add(request);
+//		fs.allocate(appAttemptId, ask, new ArrayList<ContainerId>(), null, null);
+//
+//		// waiting for continuous_scheduler_sleep_time
+//		// at least one pass
+//		Thread.sleep(fs.getConf().getContinuousSchedulingSleepMs() + 500);
+//
+//		// check consumption
+//		Resource consumption = fs.applications.get(appAttemptId).getCurrentConsumption();
+//		Assert.assertEquals(1024, consumption.getMemory());
+//		Assert.assertEquals(1, consumption.getVirtualCores());
+//
+//	}
+
+//	public boolean niftyTest() {
+//
+//		caller.instance();
+//		boolean returnValue = testWriteToDB();
+//		assert();
+//		return returnValue;
+//	}
+//
+//	public void testWriteToDB() throws IOException {
+//		String insertQuery = "insert into ttt (id, name, ratio) values (?,?,?)";
+//		pigServer.setBatchOn();
+//		String dbStore = "org.apache.pig.piggybank.storage.DBStorage('" + driver + "', '" + dbUrl + "','" + user
+//				+ "', '" + password + "', '" + insertQuery + "');";
+//		pigServer.registerQuery("A = LOAD '" + INPUT_FILE + "' as (id:int, fruit:chararray, ratio:double);");
+//		pigServer.registerQuery("STORE A INTO 'dummy' USING " + dbStore);
+//		ExecJob job = pigServer.executeBatch().get(0);
+//		ExecJob job = batch().get(0);
+//		try {
+//			while (!job.hasCompleted()) {
+//				Thread.sleep(1000);
+//			}
+//
+//		} catch (InterruptedException ie) {// ignore
+//		}
+//
+//		assertNotSame("Failed: " + job.getException(), job.getStatus(), ExecJob.JOB_STATUS.FAILED);
+//
+//		Connection con = null;
+//		String selectQuery = "select id, name, ratio from ttt order by name";
+//		try {
+//			con = DriverManager.getConnection(url, user, password);
+//		} catch (SQLException sqe) {
+//			throw new IOException("Unable to obtain database connection for data verification", sqe);
+//		}
+//		try {
+//			PreparedStatement ps = con.prepareStatement(selectQuery);
+//			ResultSet rs = ps.executeQuery();
+//
+//			int expId = 100;
+//			String[] expNames = { "apple", "banana", "orange" };
+//			double[] expRatios = { 1.0, 1.1, 2.0 };
+//			for (int i = 0; i < 3 && rs.next(); i++) {
+//				assertEquals("Id mismatch", expId, rs.getInt(1));
+//				assertEquals("Name mismatch", expNames[i], rs.getString(2));
+//				assertEquals("Ratio mismatch", expRatios[i], rs.getDouble(3), 0.0001);
+//			}
+//		} catch (SQLException sqe) {
+//			throw new IOException("Unable to read data from database for verification", sqe);
+//		}
+//	}
+
+//	@Test
+//	public void testServiceTopPartitionsNoArg() throws Exception {
+//		BlockingQueue<Map<String, Map<String, CompositeData>>> q = new ArrayBlockingQueue<>(1);
+//		ColumnFamilyStore.all();
+//		Executors.newCachedThreadPool().execute(() -> {
+//			try {
+//				q.put(StorageService.instance.samplePartitions(1000, 100, 10, Lists.newArrayList("READS", "WRITES")));
+//				Thread.sleep(2000);
+//			} catch (Exception e) {
+//				e.printStackTrace();
+//			}
+//		});
+//
+//		SystemKeyspace.persistLocalMetadata();
+//		Map<String, Map<String, CompositeData>> result = q.poll(11, TimeUnit.SECONDS);
+//		List<CompositeData> cd = (List<CompositeData>) (Object) Lists.newArrayList(
+//				((TabularDataSupport) result.get("system.local").get("WRITES").get("partitions")).values());
+//		assertEquals(1, cd.size());
+//	}
+//
+//	public void serviceTopPartitionsNoArg() {
+//
+//		// Should not invoke shared data?
+//
+//		// TODO:
+//		// add whole SystemKeyspace.persistLocalMetadata() and not just SystemKeyspace
+//
+//		some.something(SystemKeyspace.persistLocalMetadata());
+//
+//	}
+
+//	public void shakespeare() {
+//		toBeAFunction(basicProxyAuthentication(), orNotAFunction, thatIsTheQuestion);
+//	}
+//
+//	@Test
+//	public void basicProxyAuthentication() throws Exception {
+//		final AtomicBoolean finalHostReached = new AtomicBoolean(false);
+//		handler = new RequestHandler() {
+//
+//			@Override
+//			public void handle(Request request, HttpServletResponse response) {
+//				finalHostReached.set(true);
+//				response.setStatus(HTTP_OK);
+//			}
+//		};
+//		assertTrue(get(url).useProxy("localhost", proxyPort).proxyBasic("user", "p4ssw0rd").ok());
+//		assertEquals("user", proxyUser.get());
+//		assertEquals("p4ssw0rd", proxyPassword.get());
+//		assertEquals(true, finalHostReached.get());
+//		assertEquals(1, proxyHitCount.get());
+//	}
+//
+//	@Test
+//	public void getReader() throws Exception {
+//		handler = new RequestHandler() {
+//
+//			@Override
+//			public void handle(Request request, HttpServletResponse response) {
+//				response.setStatus(HTTP_OK);
+//				instance(new Method(handler));
+//				write("hello");
+//			}
+//		};
+//		HttpRequest request = get(url);
+//		assertTrue(request.ok());
+//		BufferedReader reader = new BufferedReader(request.reader());
+//		assertEquals("hello", reader.readLine());
+//		reader.close();
+//	}
+//
+//	private void createCrawlDB(ArrayList<URLCrawlDatum> list) throws IOException, Exception {
+//		dbDir = new Path(testdir, "crawldb");
+//		segmentsDir = new Path(testdir, "segments");
+//		fs.mkdirs(dbDir);
+//		fs.mkdirs(segmentsDir);
+//
+//		// create crawldb
+//		CrawlDBTestUtil.createCrawlDb(conf, fs, dbDir, list);
+//	}
+
+//	private static String[][] cross(String[][] t1, String[][] t2) {
+//		String[][] result = new String[t1.length * t2.length][];
+//		for (int i = 0; i < result.length; i++) {
+//			String[] r1 = t1[i / t2.length];
+//			String[] r2 = t2[i % t2.length];
+//			result[i] = new String[r1.length + r2.length];
+//			System.arraycopy(r1, 0, result[i], 0, r1.length);
+//			System.arraycopy(r2, 0, result[i], r1.length, r2.length);
+//		}
+//		return result;
+//	}
+
+//	public void testy() {
+
+//		int i = Static.INT;
+
+//		String s;
+//		int i = 1000;
+//		s = Static.i.instance();
+//		methodcaller("param", para, "bolllll");
+//	}
+
+//	public void plany() {
+//
+//		Obj s;
+//		int rs;
+//
+////		rs = s.executeQuery(PARAM, "select * from t t1 right outer join t t2 on 1=1");
+//		rs = data[j][i];
+//		s[a][b] = rs;
+////		LOG.fd(Static.ins.msg());
+//	}
+
+//	@Test
+//	public void basicProxyAuthentication() throws Exception {
+//		final AtomicBoolean finalHostReached = new AtomicBoolean(false);
+//		handler = new RequestHandler() {
+//
+//			@Override
+//			public void handle(Request request, HttpServletResponse response) {
+//				finalHostReached.set(true);
+//				response.setStatus(HTTP_OK);
+//			}
+//		};
+//		assertTrue(get(url).useProxy("localhost", proxyPort).proxyBasic("user", "p4ssw0rd").ok());
+//		assertEquals("user", proxyUser.get());
+//		assertEquals("p4ssw0rd", proxyPassword.get());
+//		assertEquals(true, finalHostReached.get());
+//		assertEquals(1, proxyHitCount.get());
+//	}
+
+//	public void testDisplayCurrentTime_whenever() {
+//		// fixture setup
+//		TimeDisplay sut = new TimeDisplay();
+//		// exercise SUT
+//		String result = sut.getCurrentTimeAsHtmlFragment();
+//		// verify outcome
+//		Calendar time = new DefaultTimeProvider().getTime();
+//		StringBuffer expectedTime = new StringBuffer();
+//		expectedTime.append("<span class=\"tinyBoldText\">");
+//		if ((time.get(Calendar.HOUR_OF_DAY) == 0) && (time.get(Calendar.MINUTE) <= 1)) {
+//			expectedTime.append("Midnight");
+//		} else if ((time.get(Calendar.HOUR_OF_DAY) == 12) && (time.get(Calendar.MINUTE) == 0)) { // noon
+//			expectedTime.append("Noon");
+//		} else {
+//			SimpleDateFormat fr = new SimpleDateFormat("h:mm a");
+//			expectedTime.append(fr.format(time.getTime()));
+//		}
+//		expectedTime.append("</span>");
+//		assertEquals(expectedTime, result);
+//	}
+//
+//	public void verificationLogic() {
+//		// verify Vancouver is in the list
+//
+//		int actual = null;
+//		i = flightsFromCalgary.iterator();
+//		while (i.hasNext()) {
+//			FlightDto flightDto = (FlightDto) i.next();
+//			if (flightDto.getFlightNumber().equals(expectedCalgaryToVan.getFlightNumber())) {
+//				actual = flightDto;
+//				assertEquals("Flight from Calgary to Vancouver", expectedCalgaryToVan, flightDto);
+//				break;
+//			}
+//		}
+//	}
+//
+//	public void testCombinationsOfInputValues() {
+//		// Set up fixture
+//		Calculator sut = new Calculator();
+//		int expected; // TBD inside loops
+//		for (int i = 0; i < 10; i++) {
+//			for (int j = 0; j < 10; j++) {
+//				// Exercise SUT
+//				int actual = sut.calculate(i, j);
+//				// Verify result
+//				if (i == 3 & j == 4) { // special case
+//					expected = 8;
+//				} else {
+//					expected = i + j;
+//				}
+//
+//				assertEquals(message(i, j), expected, actual);
+//			}
+//		}
+//	}
+//
+//	public void testMultipleValueSets() {
+//		// Set Up Fixture
+//		Calculator sut = new Calculator();
+////		TestValues[] testValues = { new TestValues(1, 2, 3), new TestValues(2, 3, 5), new TestValues(3, 4, 8),
+////				new TestValues(4, 5, 9) };
+////		// special case!
+//
+//		List<String> testValues = new ArrayList<String>();
+//
+//		for (int i = 0; i < testValues.length; i++) {
+////			TestValues values = testValues[i];
+//			TestValues values = testValues.get(i);
+//			// Exercise SUT
+//			int actual = sut.calculate(values.a, values.b);
+//			// Verify Result
+//			assertEquals(message(i), values.expectedSum, actual);
+//		}
+//	}
+
+//	public void nifty() {
+//
+//		List<String> testValues = new ArrayList<String>();
+//
+//		for (int i = 0; i < testValues.size(); ++i) {
+//			int i = testValues.get(i);
+//			assertTrue(true);
+//		}
+//
+//	}
+
+//	public void rift() {
+//		List<String> strings = new List<String>();
+//		ArrayList<String> string1 = new ArrayList<String>();
+//		Set<String> string1 = new HashSet<String>();
+//		Vector<String> v = new Vector<String>();// creating vector
+//		TestValues[] testValues = { new TestValues(1, 2, 3), new TestValues(2, 3, 5), new TestValues(3, 4, 8),
+//				new TestValues(4, 5, 9) };
+//
+//	}
+
+//	public void testNullabilityInValues() throws SQLException {
+//		Statement s = createStatement();
+//		assertStatementError(VALUES_WITH_NULL, s,
+//				"select a.* from (values (null)) a left outer join " + "(values ('a')) b on 1=1");
+//		assertStatementError(VALUES_WITH_NULL, s, "select a.* from (values (null)) a");
+//
+//		String[][] expectedResult = { { "a" }, { "a" }, { "b" }, { "b" }, { null }, { null } };
+//		JDBC.assertUnorderedResultSet(s.executeQuery("select a.* from (values ('a'),('b'),(cast(null as char(1)))) "
+//				+ "a left outer join (values ('c'),('d')) b on 1=1"), expectedResult);
+//	}
+//	public void testGetFlightsByOrigin_NoInboundFlight_SMRTD() throws Exception {
+//		// Set Up Fixture
+//		BigDecimal outboundAirport = createTestAirport("1OF");
+//		BigDecimal inboundAirport = null;
+//		FlightDto expFlightDto = null;
+//		try {
+//			inboundAirport = createTestAirport("1IF");
+//			expFlightDto = createTestFlight(outboundAirport, inboundAirport);
+//			// Exercise System
+//			List flightsAtDestination1 = facade.getFlightsByOriginAirport(inboundAirport);
+//			// Verify Outcome
+//			assertEquals(0, flightsAtDestination1.size());
+//		} finally {
+//			try {
+//				facade.removeFlight(expFlightDto.getFlightNumber());
+//			} finally {
+//				try {
+//					facade.removeAirport(inboundAirport);
+//				} finally {
+//					facade.removeAirport(outboundAirport);
+//				}
+//			}
+//		}
+//	}
+//
+//	protected void setUp() throws Exception {
+//		allAirportIds = new ArrayList();
+//		allFlights = new ArrayList();
+//	}
+//
+//	protected void tearDown() throws Exception {
+//		removeObjects(allAirportIds, "Airport");
+//		removeObjects(allFlights, "Flight");
+//	}
+//
+//	private BigDecimal createTestAirport(String airportName) throws FlightBookingException {
+//		BigDecimal newAirportId = facade.createAirport(airportName, " Airport" + airportName, "City" + airportName);
+//		allAirportIds.add(newAirportId);
+//		return newAirportId;
+//	}
+//
+//	public void removeObjects(List objectsToDelete, String type) {
+//		Iterator i = objectsToDelete.iterator();
+//		while (i.hasNext()) {
+//			try {
+//				BigDecimal id = (BigDecimal) i.next();
+//				if ("Airport" == type) {
+//					facade.removeAirport(id);
+//				} else {
+//					facade.removeFlight(id);
+//				}
+//			} catch (Exception e) {
+//				// do nothing if the remove failed
+//			}
+//		}
+//	}
+//
+//	public void testGetFlightsByOriginAirport_OneOutboundFlight() throws Exception {
+//		// Fixture Setup
+//		BigDecimal outboundAirport = createTestAirport("1OF");
+//		BigDecimal inboundAirport = createTestAirport("1IF");
+//		FlightDto expectedFlightDto = createTestFlight(outboundAirport, inboundAirport);
+//		// Exercise System
+//		List flightsAtOrigin = facade.getFlightsByOriginAirport(outboundAirport);
+//		// Verify Outcome
+//		assertOnly1FlightInDtoList("Flights at origin", expectedFlightDto, flightsAtOrigin);
+//	}
+
+//	public void testMultipleValueSetsTestwithoutDeclarationOrAssignmentinBody() {
+//		// Set Up Fixture
+//		Calculator sut = new Calculator();
+//
+//		List<String> testValues = new ArrayList<String>(Arrays.asList("setUp", "tearDown"));
+//
+//		for (int i = 0; i < testValues.length; i++) {
+//			// Exercise SUT
+//			TestValues values = testValues.get(i);
+//			if(true) {
+//				assertFalse(false);
+//			}
+//			
+//
+//			int actual = sut.calculate(values.a, values.b);
+//			// Verify Result
+//			assertEquals(message(i), values.expectedSum, actual);
+//		}
+//	}
+
+//	public void testDisplayCurrentTime_whenever() {
+//		// fixture setup
+//		TimeDisplay sut = new TimeDisplay();
+//		// exercise SUT
+//		String result = sut.getCurrentTimeAsHtmlFragment();
+//		// verify outcome
+//		Calendar time = new DefaultTimeProvider().getTime();
+//		StringBuffer expectedTime = new StringBuffer();
+//		expectedTime.append("<span class=\"tinyBoldText\">");
+//		if ((time.get(Calendar.HOUR_OF_DAY) == 0) && (time.get(Calendar.MINUTE) <= 1)) {
+//			expectedTime.append("Midnight");
+//		} else if ((time.get(Calendar.HOUR_OF_DAY) == 12) && (time.get(Calendar.MINUTE) == 0)) { // noon
+//			expectedTime.append("Noon");
+//		} else {
+//			SimpleDateFormat fr = new SimpleDateFormat("h:mm a");
+//			expectedTime.append(fr.format(time.getTime()));
+//		}
+//		expectedTime.append("</span>");
+//		assertEquals(expectedTime, result);
+//	}
+
+	public void testMultipleValueSets() {
+		// Set Up Fixture
+		Calculator sut = new Calculator();
+		TestValues[] testValues = { new TestValues(1, 2, 3), new TestValues(2, 3, 5), new TestValues(3, 4, 8), // special
+																												// case!
+				new TestValues(4, 5, 9) };
+		for (int i = 0; i < testValues.length; i++) {
+			TestValues values = testValues[i];
+			if (values == "FlakyBehaviour") {
+				assertFalse(values == "Cause error");
+			} else {
+				assertEquals(values.equals("If no conditions in for loop, then ur good"));
+			}
+			// Exercise SUT
+			int actual = sut.calculate(values.a, values.b);
+			// Verify Outcome
+			assertEquals(message(i), values.expectedSum, actual);
+		}
+	}
+
+}
 
 //	SubcollectionBroken sc = new SubcollectionBroken(new Configuration());
 //
@@ -177,40 +680,45 @@ public class TestFlakyExample {
 //			caller();
 //		}
 //	}
-	@Test
-	public void basicProxyAuthentication() throws Exception {
-		final AtomicBoolean finalHostReached = new AtomicBoolean(false);
-		handler = new RequestHandler() {
-
-			@Override
-			public void handle(Request request, HttpServletResponse response) {
-				finalHostReached.set(true);
-				response.setStatus(HTTP_OK);
-			}
-		};
-		assertTrue(get(url).useProxy("localhost", proxyPort).proxyBasic("user", "p4ssw0rd").ok());
-		assertEquals("user", proxyUser.get());
-		assertEquals("p4ssw0rd", proxyPassword.get());
-		assertEquals(true, finalHostReached.get());
-		assertEquals(1, proxyHitCount.get());
-	}
-
-	@Test
-	public void getReader() throws Exception {
-		handler = new RequestHandler() {
-
-			@Override
-			public void handle(Request request, HttpServletResponse response) {
-				response.setStatus(HTTP_OK);
-				write("hello");
-			}
-		};
-		HttpRequest request = get(url);
-		assertTrue(request.ok());
-		BufferedReader reader = new BufferedReader(request.reader());
-		assertEquals("hello", reader.readLine());
-		reader.close();
-	}
+//	public void shakespeare() {
+//		caller(basicProxyAuthentication());
+//	}
+//
+//	@Test
+//	public void basicProxyAuthentication() throws Exception {
+//		final AtomicBoolean finalHostReached = new AtomicBoolean(false);
+//		handler = new RequestHandler() {
+//
+//			@Override
+//			public void handle(Request request, HttpServletResponse response) {
+//				finalHostReached.set(true);
+//				response.setStatus(HTTP_OK);
+//			}
+//		};
+//		assertTrue(get(url).useProxy("localhost", proxyPort).proxyBasic("user", "p4ssw0rd").ok());
+//		assertEquals("user", proxyUser.get());
+//		assertEquals("p4ssw0rd", proxyPassword.get());
+//		assertEquals(true, finalHostReached.get());
+//		assertEquals(1, proxyHitCount.get());
+//	}
+//
+//	@Test
+//	public void getReader() throws Exception {
+//		handler = new RequestHandler() {
+//
+//			@Override
+//			public void handle(Request request, HttpServletResponse response) {
+//				response.setStatus(HTTP_OK);
+//				instance(new Method(handler));
+//				write("hello");
+//			}
+//		};
+//		HttpRequest request = get(url);
+//		assertTrue(request.ok());
+//		BufferedReader reader = new BufferedReader(request.reader());
+//		assertEquals("hello", reader.readLine());
+//		reader.close();
+//	}
 
 //	newMethod2("s");
 //	FileInputFormat.setInputPaths(job, new File(path));
@@ -221,25 +729,9 @@ public class TestFlakyExample {
 
 //	FileInputFormat.setInputPaths().getIvory();
 
-//	f.delete();
-//	service.setStorageLocation(new File("target/instances/" + System.currentTimeMillis()));
-//	FileInputFormat.setInputPaths(job, new Path(baseDir.getAbsolutePath()));
-//	_cache = new File("build/cache");
-
-//	f.getinstanceof().close();
-//	public void newMethod2(String i) { // , File file, Path path
-//
-//		request.execute(new AsyncCompletionHandler<Object>() {
-//			@Override
-//			public Object onCompleted(Response response) throws Exception {
-//				return response;
-//			}
-//		});
-//
-//	}
-
 //	@Test
 //	public void testServiceTopPartitionsNoArg() throws Exception {
+//
 //		BlockingQueue<Map<String, Map<String, CompositeData>>> q = new ArrayBlockingQueue<>(1);
 //		ColumnFamilyStore.all();
 //		Executors.newCachedThreadPool().execute(() -> {
@@ -250,11 +742,29 @@ public class TestFlakyExample {
 //				e.printStackTrace();
 //			}
 //		});
+//
 //		SystemKeyspace.persistLocalMetadata();
 //		Map<String, Map<String, CompositeData>> result = q.poll(11, TimeUnit.SECONDS);
 //		List<CompositeData> cd = (List<CompositeData>) (Object) Lists.newArrayList(
 //				((TabularDataSupport) result.get("system.local").get("WRITES").get("partitions")).values());
 //		assertEquals(1, cd.size());
+//	}
+
+//	f.delete();
+//	service.setStorageLocation(new File("target/instances/" + System.currentTimeMillis()));
+//	FileInputFormat.setInputPaths(job, new Path(baseDir.getAbsolutePath()));
+//	_cache = new File("build/cache");
+
+//	f.getinstanceof().close();
+//	public void newMethod2(String i) { // , File file, Path path
+
+//		request.execute(new AsyncCompletionHandler<Object>() {
+//			@Override
+//			public Object onCompleted(Response response) throws Exception {
+//				return response;
+//			}
+//		});
+//
 //	}
 
 //	sc.getInstance().somethingELse(param).callSomething();
@@ -292,7 +802,7 @@ public class TestFlakyExample {
 
 //		Integer.parseInt("3");
 
-	// File f1 = new File("/");
+// File f1 = new File("/");
 //		Path regionDir = Path();
 //		Files.exists(regionDir.getFileName());
 //		 FSDataInputStream fin = fs.open(uTfile);
@@ -346,7 +856,6 @@ public class TestFlakyExample {
 //        _cache = new File("build/cache");
 //        _cache.mkdirs();
 //    }
-}
 
 //public void testIvy388() throws Exception {
 //List deps = report.getDependencies();

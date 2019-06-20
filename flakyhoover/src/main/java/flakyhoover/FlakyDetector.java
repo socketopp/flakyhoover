@@ -15,6 +15,17 @@ public class FlakyDetector {
 
 	private List<AbstractFlaky> flakyInst;
 
+	public FlakyDetector(boolean testing, AbstractFlaky test) {
+		if (testing) {
+			flakyInst = new ArrayList<>();
+			flakyInst.add(test);
+
+		} else {
+			initializeFlakyInstances();
+
+		}
+	}
+
 	public FlakyDetector() {
 		initializeFlakyInstances();
 	}

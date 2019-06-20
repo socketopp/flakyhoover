@@ -27,9 +27,9 @@ import flakyhoover.AbstractFlakyElement;
 import flakyhoover.MetaData;
 import flakyhoover.MethodData;
 import flakyhoover.TestMethod;
+import flakyhoover.VariableData;
 import util.TestSmell;
 import util.Util;
-import flakyhoover.VariableData;
 
 public class TestRunWarNew extends AbstractFlaky {
 	private List<AbstractFlakyElement> flakyElementList;
@@ -87,10 +87,10 @@ public class TestRunWarNew extends AbstractFlaky {
 
 		private MethodDeclaration currentMethod = null;
 		private boolean hasFlaky = false;
-		private List<String> exceptions = new ArrayList<String>(
-				Arrays.asList("Boolean", "Byte", "Short", "Character", "toString", "Integer", "Long", "Float", "Double",
-						"LOG", "log", "", "Collections", "Math", "assert", "assertEquals", "assertTrue", "assertFalse",
-						"assertNotNull", "assertNull", "assertSame", "assertNotSame", "assertArrayEquals", "fail"));
+		private List<String> exceptions = new ArrayList<String>(Arrays.asList("Boolean", "Byte", "Short", "Character",
+				"toString", "Integer", "Long", "Float", "Double", "Lists", "LOG", "log", "", "Collections", "Math",
+				"assert", "assertEquals", "assertTrue", "assertFalse", "assertNotNull", "assertNull", "assertSame",
+				"assertNotSame", "assertArrayEquals", "fail"));
 		private List<String> operators = new ArrayList<String>(Arrays.asList("POSTFIX_INCREMENT", "POSTFIX_DECREMENT",
 				"MINUS", "PLUS", "LOGICAL_COMPLEMENT", "PREFIX_INCREMENT", "PREFIX_DECREMENT", "LOGICAL_COMPLEMENT"));
 		TestMethod testMethod;
@@ -253,7 +253,7 @@ public class TestRunWarNew extends AbstractFlaky {
 
 						}
 					}
-					
+
 					// reset values for next method
 					currentMethod = null;
 					testSmell = new TestSmell();
@@ -267,10 +267,8 @@ public class TestRunWarNew extends AbstractFlaky {
 					if (methodCalls.get(n.getNameAsString()).isEmpty()) {
 						methodCalls.remove(n.getNameAsString());
 					}
-					
 
 				}
-
 
 				// System.out.println("");
 			}
@@ -299,12 +297,11 @@ public class TestRunWarNew extends AbstractFlaky {
 		@Override
 		public void visit(MethodCallExpr n, Void arg) {
 
-
 			if (currentMethod != null && firstRun && !getAllMethod) {
 				System.out.println("MethodCallExpr: " + n);
 
 				String key = currentMethod.getNameAsString();
-				
+
 				if (methodCalls.containsKey(key)) {
 					ArrayList<MethodData> arrayList = methodCalls.get(key);
 
@@ -497,8 +494,7 @@ public class TestRunWarNew extends AbstractFlaky {
 //										instance.setIsTestRunWar(true);
 //										metaData.add(instance);
 //									} else 
-										if (!mData1.getBaseVar().equals("empty")
-											&& !mData2.getBaseVar().equals("empty")
+									if (!mData1.getBaseVar().equals("empty") && !mData2.getBaseVar().equals("empty")
 											&& mData1.getBaseVar().equals(mData2.getBaseVar())) {
 										if (!checkIfFlaky(currentMethod.getNameAsString())) {
 											setMethodStatusFlaky(currentMethod);

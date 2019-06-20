@@ -21,6 +21,15 @@ public class Util {
 
 	}
 
+	public static boolean containerContain(List<String> container, String keyword) {
+		for (int i = 0; i < container.size(); i++) {
+			if (keyword.contains(container.get(i))) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public static boolean isValidTestMethod(MethodDeclaration n) {
 		boolean valid = false;
 
@@ -139,6 +148,9 @@ public class Util {
 
 		for (int i = 0; i < charArray.length; i++) {
 
+			if (charArray[i] == '_' || charArray[i] == '-' || charArray[i] == '.') {
+				continue;
+			}
 			// if any character is not in upper case, return false
 			if (!Character.isUpperCase(charArray[i]))
 				return false;

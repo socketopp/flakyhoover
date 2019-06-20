@@ -10,7 +10,10 @@ import java.util.Set;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.MethodCallExpr;
+import com.github.javaparser.ast.expr.NameExpr;
+import com.github.javaparser.ast.stmt.ExpressionStmt;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 
 import flakyhoover.AbstractFlaky;
@@ -22,7 +25,7 @@ import util.ASTHelper;
 import util.TestSmell;
 import util.Util;
 
-public class FireAndForget extends AbstractFlaky {
+public class FireAndForget2 extends AbstractFlaky {
 	private List<AbstractFlakyElement> flakyElementList;
 	protected String fileName;
 	protected String projectName;
@@ -32,7 +35,7 @@ public class FireAndForget extends AbstractFlaky {
 		return testSmells;
 	}
 
-	public FireAndForget() {
+	public FireAndForget2() {
 		flakyElementList = new ArrayList<>();
 	}
 
@@ -52,8 +55,8 @@ public class FireAndForget extends AbstractFlaky {
 		this.fileName = testClassName;
 		this.projectName = projectName;
 		testSmells = new ArrayList<TestSmell>();
-		FireAndForget.ClassVisitor classVisitor;
-		classVisitor = new FireAndForget.ClassVisitor();
+		FireAndForget2.ClassVisitor classVisitor;
+		classVisitor = new FireAndForget2.ClassVisitor();
 
 		classVisitor.setState("analyze");
 		classVisitor.visit(testFileCompilationUnit, null);
@@ -80,14 +83,29 @@ public class FireAndForget extends AbstractFlaky {
 		private Set<IntelMethod> allMethodsData = new HashSet<IntelMethod>();
 		private Set<String> allClassMethods = new HashSet<String>();
 
-		private List<String> externalCalls = Arrays.asList("server", "client", "soap", "call", "request", "response",
-				"job", "http", "httprequest", "socket", "listener", "servlet", "fetch", "receive", "connect", "db",
-				"execute");
+		private List<String> externalCalls = Arrays.asList("server", "client", "context", "database", "soap", "call",
+				"job", "request", "con", "executeQuery", "stmt", "getResource", "manager", "factory", "response",
+				"cursor", "sql", "read", "http", "socket", "listener", "servlet", "fetch", "receive", "connect",
+				"obtain", "db", "aquire", "create", "execute", "getInstance", "load");
 
-		private double lineNrExternal = Double.POSITIVE_INFINITY;
+		// Create?Nja
+//		FileOutputStream
+//		getInstance?? getResource??? getInstance
+
+		private int lineNrSync = -1;
+		private int lineNrExternal = -1;
 
 		private TestSmell testSmell = new TestSmell();
 		private boolean isTestClass = false;
+
+		private boolean containerContain(List<String> container, String keyword) {
+			for (int i = 0; i < container.size(); i++) {
+				if (keyword.contains(container.get(i))) {
+					return true;
+				}
+			}
+			return false;
+		}
 
 		public void setState(String state) {
 			this.state = state;
@@ -104,6 +122,12 @@ public class FireAndForget extends AbstractFlaky {
 
 		}
 
+//		@Override
+//		public void visit(ImportDeclaration n, Void arg) {
+//			System.out.println("import: " + n);
+//			super.visit(n, arg);
+//		}
+
 		private void initTestSmells(MethodDeclaration n) {
 			testSmell.setFlakinessType(flakinessType);
 			testSmell.setProject(projectName);
@@ -117,8 +141,7 @@ public class FireAndForget extends AbstractFlaky {
 		public void visit(MethodDeclaration n, Void arg) {
 //			System.out.println("MethodDeclaration: " + n.getNameAsString());
 
-			boolean hasAssert = n.getBody().toString().toLowerCase().contains("assert");
-			if (isTestClass && hasAssert) {
+			if (isTestClass) {
 
 				switch (state) {
 				case "analyze": {
@@ -141,6 +164,14 @@ public class FireAndForget extends AbstractFlaky {
 				switch (state) {
 				case "analyze": {
 
+					if (this.lineNrSync == -1 && this.lineNrExternal != -1) {
+						this.hasFlaky = true;
+					} else if (this.lineNrExternal > this.lineNrSync) {
+						this.hasFlaky = true;
+					} else {
+						this.hasFlaky = false;
+					}
+
 					testMethod.setHasFlaky(hasFlaky);
 					if (hasFlaky) {
 						testSmells.add(testSmell);
@@ -151,7 +182,8 @@ public class FireAndForget extends AbstractFlaky {
 					testSmell = new TestSmell();
 					hasFlaky = false;
 					currentMethod = null;
-					this.lineNrExternal = Double.POSITIVE_INFINITY;
+					this.lineNrExternal = -1;
+					this.lineNrSync = -1;
 
 					break;
 				}
@@ -172,13 +204,41 @@ public class FireAndForget extends AbstractFlaky {
 					}
 					hasFlaky = false;
 					testSmell = new TestSmell();
-//					testMethod.addMetaDataItem("VariableCond", metaData);
+//				testMethod.addMetaDataItem("VariableCond", metaData);
+
 					break;
 
 				}
 
 				}
 			}
+		}
+
+		@Override
+		public void visit(ExpressionStmt n, Void arg) {
+			if (currentMethod != null) {
+				System.out.println("ExpressionStmt: " + n);
+				Expression e = n.getExpression();
+				List<NameExpr> a = e.findAll(NameExpr.class);
+
+				for (NameExpr expr : a) {
+					System.out.println("EXPR: " + expr);
+				}
+				System.out.println("a: " + a.size());
+				System.out.println("Expression: " + e);
+
+				if (containerContain(externalCalls, n.toString())) {
+					this.lineNrExternal = n.getBegin().get().line;
+					metaData.add(
+							new MetaData(n.getBegin().get().line, n.getClass().getSimpleName(), n.toString(), true));
+				}
+				if (containerContain(asyncWords, n.toString())) {
+					this.lineNrSync = n.getBegin().get().line;
+					if (metaData.size() > 0)
+						metaData.get(metaData.size() - 1).setFlaky(false);
+				}
+			}
+			super.visit(n, arg);
 		}
 
 		@Override
@@ -193,31 +253,6 @@ public class FireAndForget extends AbstractFlaky {
 					if (!n.getNameAsString().equals(currentMethod.getNameAsString())) {
 						System.out.println("methodData: " + n.getNameAsString());
 						methodData.addMethod(n.getNameAsString());
-					}
-				} else if (n.getScope().isPresent()) {
-
-					System.out.println("PresentScope: " + n);
-					// Look for external calls on object that are followed by Thread.sleep(X).
-					for (String expr : externalCalls) {
-
-						if (n.toString().toLowerCase().contains(expr)) {
-							System.out.println("KIWI: " + expr);
-
-							this.lineNrExternal = n.getBegin().get().line;
-							System.out.println("CAME HERE2: " + lineNrExternal);
-						}
-					}
-
-					if (n.toString().contains("Thread.sleep")) {
-						System.out.println("THREAD:SLEEP: " + n);
-						int currentLine = n.getBegin().get().line;
-						System.out.println("currentLine: " + currentLine);
-						System.out.println("lineNrExternal: " + lineNrExternal);
-
-						if (this.lineNrExternal < currentLine) {
-							System.out.println("true right");
-							this.hasFlaky = true;
-						}
 					}
 				}
 			}
@@ -245,42 +280,3 @@ public class FireAndForget extends AbstractFlaky {
 	}
 
 }
-
-//@Override
-//public void visit(ExpressionStmt n, Void arg) {
-//	if (currentMethod != null) {
-//		System.out.println("ExpressionStmt: " + n);
-//
-//		if (containerContain(externalCalls, n.toString())) {
-//			System.out.println("THISLINE: " + n);
-//			this.lineNrExternal = n.getBegin().get().line;
-//			metaData.add(
-//					new MetaData(n.getBegin().get().line, n.getClass().getSimpleName(), n.toString(), true));
-//		}
-//		if (containerContain(asyncWords, n.toString())) {
-//			if (metaData.size() > 0)
-//				metaData.get(metaData.size() - 1).setFlaky(false);
-//		}
-//	}
-//	super.visit(n, arg);
-//}
-
-//@Override
-//public void visit(SynchronizedStmt n, Void arg) {
-//
-//	if (currentMethod != null && state.equals("analyze")) {
-//		System.out.println("SynchronizedStmt: " + n.toString());
-//	}
-//
-//	super.visit(n, arg);
-//}
-
-//Expression e = n.getExpression();
-//
-//List<NameExpr> a = e.findAll(NameExpr.class);
-//for (NameExpr expr : a) {
-//	System.out.println("EXPR: " + expr);
-//}
-
-//System.out.println("a: " + a.size());
-//System.out.println("Expression: " + e);

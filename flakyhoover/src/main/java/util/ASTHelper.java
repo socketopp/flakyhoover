@@ -56,8 +56,27 @@ public class ASTHelper {
 					if (currentMethod.equals(method1.getKey()) && !method1.getKey().equals(method2.getKey())) {
 						if (method1.getValue().contains(variable) && method2.getValue().contains(variable)) {
 							isFlaky = true;
+							break;
 						}
 
+					}
+				}
+			}
+		}
+		return isFlaky;
+	}
+
+	public static boolean analyzeTestRunWarStatic(Set<String> classVariables, Map<String, Set<String>> methodCalls,
+			String currentMethod) {
+		boolean isFlaky = false;
+		for (Map.Entry<String, Set<String>> method1 : methodCalls.entrySet()) {
+			for (Map.Entry<String, Set<String>> method2 : methodCalls.entrySet()) {
+				if (currentMethod.equals(method1.getKey()) && !method1.getKey().equals(method2.getKey())) {
+					for (String value : method1.getValue()) {
+						if (method2.getValue().contains(value)) {
+							isFlaky = true;
+							break;
+						}
 					}
 				}
 			}
@@ -205,9 +224,9 @@ public class ASTHelper {
 			String type = variableDeclarator.getType().getClass().getSimpleName();
 			String class_type = variableDeclarator.getTypeAsString();
 
-			if (type.equals("ClassOrInterfaceType") && !class_type.equals("String")) {
-				variabelsDeclarations.add(name);
-			}
+//			if (type.equals("ClassOrInterfaceType") && !class_type.equals("String")) {
+			variabelsDeclarations.add(name);
+//			}
 		}
 	}
 
@@ -247,9 +266,9 @@ public class ASTHelper {
 				String name = param.getNameAsString();
 				String type = param.getType().getClass().getSimpleName();
 				String class_type = param.getTypeAsString();
-				if (type.equals("ClassOrInterfaceType") && !class_type.equals("String")) {
-					variabelsDeclarations.add(name);
-				}
+//				if (type.equals("ClassOrInterfaceType") && !class_type.equals("String")) {
+				variabelsDeclarations.add(name);
+//				}
 			}
 		}
 
