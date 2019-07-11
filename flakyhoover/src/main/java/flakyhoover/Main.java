@@ -2,7 +2,6 @@ package flakyhoover;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -42,57 +41,6 @@ public class Main {
 	private static final String[] smell_headers = { "project", "test-class", "test-method", "smell-type",
 			"flakiness-type" };
 	private static final String[] flaky_headers = { "project", "test-class", "test-method" };
-
-//	private static final List<String> projects = new ArrayList<String>(
-//			Arrays.asList( "cassandra", "derby", "hbase\\src\\main\\java\\org\\apache\\hadoop\\hbase", "ant-ivy","hive", "karaf","lucene-solr", "hibernate-orm","qpid", "jfreechart_v1.0.x","elasticsearch","pig","nutch"
-//					, "wicket-1.4.x", "struts"));
-
-	private static final List<String> projects = new ArrayList<String>(Arrays.asList(
-			"hbase\\src\\test\\java\\org\\apache\\hadoop\\hbase", // Actual 699
-			"hbase\\src\\main\\java\\org\\apache\\hadoop\\hbase", // Found 1287
-
-			"pig\\src\\org\\apache\\pig", // Actual 922
-			"pig\\test\\org\\apache\\pig", // Found 934
-
-			"nutch\\src",
-
-			"derby\\java\\testing", "derby\\java\\client", "derby\\java\\engine\\org\\apache\\derby\\impl",
-			"derby\\java\\engine\\org\\apache\\derby\\jdbc",
-
-			"elasticsearch\\src\\test", // Actual 2,265
-			"elasticsearch\\src\\main\\java\\org\\elasticsearch", // Found 2,483
-
-			"ant-ivy\\test\\java\\org\\apache\\ivy", "ant-ivy\\src\\java\\org\\apache\\ivy\\core",
-			"ant-ivy\\src\\java\\org\\apache\\ivy\\plugins",
-
-			"cassandra\\src\\java\\org\\apache\\cassandra", // Actual 586
-			"cassandra\\test\\unit\\org\\apache\\cassandra", // Found 702
-
-			"karaf\\admin", // 39!
-			"karaf\\deployer", // 14!
-			"karaf\\features", // 55!
-			"karaf\\jaas", // 72!
-			"karaf\\management", // 33!
-			"karaf\\shell", // 232!
-			"karaf\\tooling", // 63!
-			"karaf\\util", // 11!
-			"karaf\\webconsole", // 10!
-
-			"hive",
-
-			"qpid\\qpid\\java\\client", "qpid\\qpid\\java\\perftests", "qpid\\qpid\\java\\common",
-			"qpid\\qpid\\java\\systests", "qpid\\qpid\\java\\broker\\src\\main\\java\\org\\apache\\qpid\\server",
-			"qpid\\qpid\\java\\broker\\src\\test\\java\\org\\apache\\qpid\\server",
-
-			"lucene-solr\\lucene\\core", "lucene-solr\\lucene\\backwards", "lucene-solr\\solr",
-
-			"hibernate-orm\\hibernate-entitymanager\\src\\main\\java\\org",
-			"hibernate-orm\\hibernate-entitymanager\\src\\test\\java\\org\\hibernate"
-
-	));
-
-//			
-//	
 
 //	https://stackoverflow.com/questions/8123058/passing-on-command-line-arguments-to-runnable-jar/8123262
 
