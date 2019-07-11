@@ -83,6 +83,7 @@ public class FireAndForget extends AbstractFlaky {
 		private List<String> externalCalls = Arrays.asList("server", "client", "soap", "call", "request", "response",
 				"job", "http", "httprequest", "socket", "listener", "servlet", "fetch", "receive", "connect", "db",
 				"execute");
+//		Scheduler
 
 		private double lineNrExternal = Double.POSITIVE_INFINITY;
 

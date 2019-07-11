@@ -215,7 +215,10 @@ public class ConditionalTestLogic extends AbstractFlaky {
 			super.visit(n, arg);
 			if (currentMethod != null && state.equals("analyze")) {
 
+				// TODO investigate getstatements maybe?
+				// n.getFinallyBlock().get().getStatements()
 				String finallyBlock = n.getFinallyBlock().toString();
+
 				if (n.getTryBlock().toString().contains("assert") && n.getFinallyBlock().toString().contains("remove")
 						|| finallyBlock.contains("delete") || finallyBlock.contains("close")
 						|| finallyBlock.contains("stop") || finallyBlock.contains("shutdown")
@@ -242,6 +245,7 @@ public class ConditionalTestLogic extends AbstractFlaky {
 
 			super.visit(n, arg);
 			if (currentMethod != null && state.equals("analyze")) {
+				System.out.println("ConditionalExpr: " + n);
 				conditionCount++;
 			}
 		}

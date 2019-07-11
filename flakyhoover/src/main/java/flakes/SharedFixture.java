@@ -317,6 +317,10 @@ public class SharedFixture extends AbstractFlaky {
 
 						String callexpr = ((NameExpr) n.getScope().get()).getNameAsString();
 //						if (!varDeclExprArray.contains(callexpr) && !this.jClasses.contains(callexpr)
+
+						// TODO : not sure if I should check for jClasses or not....
+						// Shared resources could be a file or whatever...
+
 						if (!this.jClasses.contains(callexpr) && !methodExceptions.contains(n.getNameAsString())) {
 
 							// Check for static variables
