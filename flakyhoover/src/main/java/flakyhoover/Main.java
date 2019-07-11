@@ -13,7 +13,7 @@ import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 
-import flakes.ConditionalTestLogic;
+import util.DocumentReader;
 import util.DocumentWriter;
 import util.Util;
 
@@ -170,23 +170,25 @@ public class Main {
 
 //		fffff
 
+		DocumentReader.readFromCSV("C:\\Users\\Socke\\Documents\\Examensarbete\\List-of-flaky-tests.csv");
+
 //		flakyDetector = new FlakyDetector(true, new FireAndForget());
-		flakyDetector = new FlakyDetector(true, new ConditionalTestLogic());
+//		flakyDetector = new FlakyDetector(true, new ConditionalTestLogic());
 //		flakyDetector = new FlakyDetector(true, new SharedFixture());
-		TestFile testfile = new TestFile("beaconsperth", TEST_INDIRECT, "");
+//		TestFile testfile = new TestFile("beaconsperth", TEST_INDIRECT, "");
 //		TestFile testfile = new TestFile("beaconsperth", FLAKY_FILE_PATH, "");
-		testfile = flakyDetector.detect(testfile);
-
-		ArrayList<ArrayList<String>> data = DocumentWriter.prepareData(testfile);
-		for (ArrayList<String> arrayList : data) {
-
-			for (String s : arrayList) {
-				System.out.println("res: " + s);
-
-			}
-			System.out.println("");
-			System.out.println("");
-		}
+//		testfile = flakyDetector.detect(testfile);
+//
+//		ArrayList<ArrayList<String>> data = DocumentWriter.prepareData(testfile);
+//		for (ArrayList<String> arrayList : data) {
+//
+//			for (String s : arrayList) {
+//				System.out.println("res: " + s);
+//
+//			}
+//			System.out.println("");
+//			System.out.println("");
+//		}
 
 		// Master
 //		testfile.printResult();
