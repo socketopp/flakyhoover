@@ -90,7 +90,7 @@ public class Util {
 	}
 
 	public static String removeTest(String test) {
-		return test.replace("Test", "");
+		return test.toLowerCase().replace("test", "");
 	}
 
 //	public static String getTestFileName(String testFile) {

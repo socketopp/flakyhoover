@@ -13,11 +13,13 @@ import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 
-import util.DocumentReader;
+import flakes.IndirectTesting;
 import util.DocumentWriter;
 import util.Util;
 
 public class Main {
+
+	private static ArrayList<String> allProductionFiles = new ArrayList<String>();
 
 //	private static final String FLAKY_FILE_PATH = "src\\main\\java\\lab\\HFileArchiveTestingUtil.java";
 //	private static final String TEST_INDIRECT = "src\\main\\java\\lab\\JoinTest.java";
@@ -25,13 +27,23 @@ public class Main {
 //	private static final String FLAKY_FILE_PATH = "src\\main\\java\\lab\\TestFlakyExample.java";
 //	private static final String TEST_INDIRECT = "src\\main\\java\\lab\\TestRunWarTest.java";
 //	private static final String TEST_INDIRECT = "src\\main\\java\\lab\\TestPluginSystem.java";
-	private static final String TEST_INDIRECT = "src\\main\\java\\lab\\TestFlakyExample.java";
+//	private static final String TEST_INDIRECT = "src\\main\\java\\lab\\TestFlakyExample.java";
 //	private static final String TEST_INDIRECT = "src\\main\\java\\lab\\TestConditionalTestLogic.java";
 //	private static final String TEST_INDIRECT = "src\\main\\java\\lab\\TestGenerator.java";
+//	private static final String TEST_INDIRECT = "src\\main\\java\\lab\\TestGeneratorTest.java";
 //	private static final String TEST_CON_PATH = "src\\main\\java\\lab\\TestContent.java";
-//	private static final String TEST_INDIRECT = "src\\main\\java\\lab\\TestHTMLLanguageParser.java";
+
+//	private static final String TEST_INDIRECT = "src\\main\\java\\lab\\JarVisitorTest.java";
+	private static final String TEST_INDIRECT = "src\\main\\java\\lab\\TestHTMLLanguageParser.java";
+//	private static final String TEST_INDIRECT = "src\\main\\java\\lab\\TestMoreIndexingFilter.java";
+//	private static final String TEST_INDIRECT = "src\\main\\java\\lab\\TestNGramProfile.java";
+//	private static final String TEST_INDIRECT = "src\\main\\java\\lab\\IvyCleanCacheTest.java";
+//	private static final String TEST_INDIRECT = "src\\main\\java\\lab\\TestColumnPaginationFilter.java";
 //	private static final String TEST_INDIRECT = "src\\main\\java\\lab\\TestSubcollection.java";
+//	private static final String TEST_INDIRECT = "src\\main\\java\\lab\\TestSuffixURLFilter.java";
+
 //	private static final String TEST_INDIRECT = "src\\main\\java\\lab\\TestByteBloomFilter.java";
+//	private static final String TEST_INDIRECT = "src\\main\\java\\lab\\IntervalTreeTest.java";
 //	private static final String TEST_INDIRECT = "src\\main\\java\\lab\\HFileArchiveTestingUtil.java";
 //	private static final String TEST_INDIRECT = "src\\main\\java\\lab\\TestSuffixURLFilter.java";
 //	private static final String TEST_INDIRECT = "src\\main\\java\\lab\\IvyBuildListTest.java";
@@ -82,6 +94,10 @@ public class Main {
 
 	}
 
+	public static List<String> getAllProductionFiles() {
+		return allProductionFiles;
+	}
+
 	public static void main(String[] args)
 			throws IOException, ParserConfigurationException, TransformerException, SAXException {
 //		String pathToProject = null;
@@ -93,6 +109,7 @@ public class Main {
 //			System.out.println("Missing parameters: " + e);
 //		}
 
+//		allProductionFiles = Util.getAllFiles(projectName);
 //		FileInputStream testFileInputStream = new FileInputStream("C:\\Users\\Socke\\Documents\\Examensarbete\\test_repos\\karaf\\archetypes\\blueprint\\src\\main\\resources\\archetype-resources\\src\\main\\java\\MyService.java");
 //		CompilationUnit testFileCompilationUnit = StaticJavaParser.parse(testFileInputStream);
 
@@ -170,25 +187,42 @@ public class Main {
 
 //		fffff
 
-		DocumentReader.readFromCSV("C:\\Users\\Socke\\Documents\\Examensarbete\\List-of-flaky-tests.csv");
+//		DocumentReader.readFromCSV("C:\\Users\\Socke\\Documents\\Examensarbete\\List-of-flaky-tests.csv");
+//		List<FlakyFile> smellyInstances = DocumentReader
+//				.readFromCSV("C:\\Users\\Socke\\Documents\\Examensarbete\\List-of-flaky-tests-Flaky-Test-List.csv");
+//				.readFromCSV("C:\\Users\\Socke\\Documents\\Examensarbete\\loft.csv");
+//		System.out.println(smellyInstances.size());
 
 //		flakyDetector = new FlakyDetector(true, new FireAndForget());
+		flakyDetector = new FlakyDetector(true, new IndirectTesting());
 //		flakyDetector = new FlakyDetector(true, new ConditionalTestLogic());
 //		flakyDetector = new FlakyDetector(true, new SharedFixture());
-//		TestFile testfile = new TestFile("beaconsperth", TEST_INDIRECT, "");
+//		flakyDetector = new FlakyDetector(true, new ResourceOptimism());
+		TestFile testfile = new TestFile("beaconsperth", TEST_INDIRECT, "");
 //		TestFile testfile = new TestFile("beaconsperth", FLAKY_FILE_PATH, "");
-//		testfile = flakyDetector.detect(testfile);
+		testfile = flakyDetector.detect(testfile);
+
+		System.out.println("testfilesize: " + testfile.getFlakyInst().size());
+
 //
-//		ArrayList<ArrayList<String>> data = DocumentWriter.prepareData(testfile);
-//		for (ArrayList<String> arrayList : data) {
-//
-//			for (String s : arrayList) {
-//				System.out.println("res: " + s);
-//
-//			}
-//			System.out.println("");
-//			System.out.println("");
-//		}
+		ArrayList<ArrayList<String>> data = DocumentWriter.prepareData(testfile);
+		for (ArrayList<String> arrayList : data) {
+
+			for (String s : arrayList) {
+				System.out.println("res: " + s);
+
+			}
+			System.out.println("");
+			System.out.println("");
+		}
+
+		String test1 = "testFileZippedJarVisitor";
+		String test2 = "FileZippedJarVisitorTest";
+		String test3 = "TestFileZippedJarVisitorTest";
+
+		System.out.println(test1.replace("test", ""));
+		System.out.println(test2.replace("test", ""));
+		System.out.println(test3.replace("test", ""));
 
 		// Master
 //		testfile.printResult();

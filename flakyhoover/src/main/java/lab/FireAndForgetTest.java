@@ -158,6 +158,35 @@ public class FireAndForgetTest {
 		Assert.assertEquals(1, consumption.getVirtualCores());
 	}
 
+	// FLAKY pattern
+	// SRC: https://martinfowler.com/articles/nonDeterminism.html
+	public void asyncIssue() {
+		int pollingInterval = 3000;
+		makeAsyncCall();
+		startTime = Time.now;
+		while (!responseReceived()) {
+			if (Time.now - startTime > waitLimit) {
+				throw new TestTimeoutException();
+			}
+			Thread.sleep(pollingInterval);
+		}
+		int value = readResponse();
+		assertTrue(1, vluae);
+	}
+
+	public void asyncIssueWithoutSleep() {
+		int pollingInterval = 3000;
+		makeAsyncCall();
+		startTime = Time.now;
+		while (!responseReceived()) {
+			if (Time.now - startTime > waitLimit) {
+				throw new TestTimeoutException();
+			}
+		}
+		int value = readResponse();
+		assertTrue(1, vluae);
+	}
+
 //	TODO implement a mechanism that detects the while loop in noFlakytestContinuousScheduling.
 //	noFlakytestContinuousScheduling is a fix from testContinuousScheduling. Only difference is the while loop.
 

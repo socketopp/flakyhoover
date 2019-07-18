@@ -164,6 +164,14 @@ public class ASTHelper {
 		}
 	}
 
+	public static boolean checkIfEqMethodOrClass(String type, String className, String methodName) {
+
+		return !type.toLowerCase().equals(className.toLowerCase())
+				|| !type.toLowerCase().equals(className.toLowerCase())
+						&& type.toLowerCase().equals(methodName.toLowerCase());
+
+	}
+
 	public static void setMethodStatusFlaky(MethodDeclaration currentMethod, Set<IntelMethod> allMethodsData,
 			boolean value) {
 		for (IntelMethod m : allMethodsData) {
@@ -233,7 +241,10 @@ public class ASTHelper {
 	public static void addParams(MethodDeclaration n, Set<String> methodVariables) {
 		if (n.getParameters().size() > 0) {
 			for (Parameter param : n.getParameters()) {
+				System.out.println("PARAM: " + param);
 				if (param.getTypeAsString().equals("File") || param.getTypeAsString().equals("Path")) {
+					System.out.println("PARAM2: " + param.getNameAsString());
+
 					methodVariables.add(param.getNameAsString());
 				}
 			}
@@ -246,7 +257,7 @@ public class ASTHelper {
 			for (Parameter param : n.getParameters()) {
 				String name = param.getNameAsString();
 				String type = param.getTypeAsString();
-				if (!jClasses.contains(type) && !name.equals(className)) {
+				if (!jClasses.contains(type) && !type.toLowerCase().equals(className.toLowerCase())) {
 					indirectClasses.add(name);
 				}
 			}
@@ -258,7 +269,11 @@ public class ASTHelper {
 		if (n.getParameters().size() > 0) {
 			for (Parameter param : n.getParameters()) {
 
+				System.out.println("PARAM1: " + param);
+
 				String parameter = getParameter(param);
+				System.out.println("PARAM2: " + parameter);
+
 				if (!parameter.equals("")) {
 					variabelsDeclarations.add(parameter);
 				}

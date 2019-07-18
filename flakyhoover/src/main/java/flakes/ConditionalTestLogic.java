@@ -126,7 +126,6 @@ public class ConditionalTestLogic extends AbstractFlaky {
 					currentMethod = n;
 					initTestSmells(n);
 
-					System.out.println("MethodDeclaration: " + n.getNameAsString());
 					testMethod = new TestMethod(n.getNameAsString(), n.getBegin().get().line);
 					testMethod.setHasFlaky(false); // default value is false (i.e. no smell)
 					this.allMethodsData.add(new IntelMethod(n.getNameAsString(), false));
@@ -136,8 +135,6 @@ public class ConditionalTestLogic extends AbstractFlaky {
 				}
 
 				super.visit(n, arg);
-
-				System.out.println("");
 
 				switch (state) {
 				case "analyze": {
@@ -173,7 +170,6 @@ public class ConditionalTestLogic extends AbstractFlaky {
 
 				// Analyze if a() calls a smelly method b(), then a is also smelly().
 				case "analyzeRelationState": {
-					System.out.println("analyzeRelationState after");
 					initTestSmells(n);
 
 					testMethod = new TestMethod(n.getNameAsString(), n.getBegin().get().line);
@@ -188,7 +184,6 @@ public class ConditionalTestLogic extends AbstractFlaky {
 					}
 					hasFlaky = false;
 					testSmell = new TestSmell();
-//				testMethod.addMetaDataItem("VariableCond", metaData);
 
 					break;
 
@@ -202,7 +197,6 @@ public class ConditionalTestLogic extends AbstractFlaky {
 		@Override
 		public void visit(IfStmt n, Void arg) {
 			if (currentMethod != null && state.equals("analyze")) {
-				System.out.println("IfStmt");
 				ifCount++;
 			}
 			super.visit(n, arg);
@@ -245,7 +239,6 @@ public class ConditionalTestLogic extends AbstractFlaky {
 
 			super.visit(n, arg);
 			if (currentMethod != null && state.equals("analyze")) {
-				System.out.println("ConditionalExpr: " + n);
 				conditionCount++;
 			}
 		}
@@ -277,12 +270,8 @@ public class ConditionalTestLogic extends AbstractFlaky {
 							Expression index = arrayAccessExpr.getIndex();
 							String containerName = arrayAccessExpr.getName().toString();
 
-							System.out.println(this.allContainers.contains(containerName));
-
 							if (this.allContainers.contains(containerName)) {
 
-								System.out.println("Counter: " + counter);
-								System.out.println("index: " + index);
 								if (index.toString().contains(counter.toString())) {
 									if (!n.findFirst(IfStmt.class).isPresent()) {
 										forCount--;
@@ -301,7 +290,6 @@ public class ConditionalTestLogic extends AbstractFlaky {
 											.getNameAsString();
 
 									if (this.allContainers.contains(containerName)) {
-										System.out.println(methodCallExpr.getNameAsString());
 										if (methodCallExpr.getNameAsString().equals("get")
 												&& methodCallExpr.getArguments().size() == 1) {
 

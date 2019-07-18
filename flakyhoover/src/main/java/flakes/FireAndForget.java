@@ -11,12 +11,12 @@ import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.expr.MethodCallExpr;
+import com.github.javaparser.ast.stmt.WhileStmt;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 
 import flakyhoover.AbstractFlaky;
 import flakyhoover.AbstractFlakyElement;
 import flakyhoover.IntelMethod;
-import flakyhoover.MetaData;
 import flakyhoover.TestMethod;
 import util.ASTHelper;
 import util.TestSmell;
@@ -71,11 +71,7 @@ public class FireAndForget extends AbstractFlaky {
 		private MethodDeclaration currentMethod = null;
 		private boolean hasFlaky = false;
 		TestMethod testMethod;
-		private List<MetaData> metaData = new ArrayList<MetaData>();
 		private String flakinessType = "async-wait";
-
-		private List<String> asyncWords = Arrays.asList("wait", "await", "async", "asynchronous", "sleep", "receive",
-				"Thread.sleep", "waiting", "timeout");
 		private String state;
 		private Set<IntelMethod> allMethodsData = new HashSet<IntelMethod>();
 		private Set<String> allClassMethods = new HashSet<String>();
@@ -83,7 +79,6 @@ public class FireAndForget extends AbstractFlaky {
 		private List<String> externalCalls = Arrays.asList("server", "client", "soap", "call", "request", "response",
 				"job", "http", "httprequest", "socket", "listener", "servlet", "fetch", "receive", "connect", "db",
 				"execute");
-//		Scheduler
 
 		private double lineNrExternal = Double.POSITIVE_INFINITY;
 
@@ -116,7 +111,6 @@ public class FireAndForget extends AbstractFlaky {
 		// examine all methods in the test class
 		@Override
 		public void visit(MethodDeclaration n, Void arg) {
-//			System.out.println("MethodDeclaration: " + n.getNameAsString());
 
 			boolean hasAssert = n.getBody().toString().toLowerCase().contains("assert");
 			if (isTestClass && hasAssert) {
@@ -136,8 +130,6 @@ public class FireAndForget extends AbstractFlaky {
 				}
 
 				super.visit(n, arg);
-
-				System.out.println("");
 
 				switch (state) {
 				case "analyze": {
@@ -159,7 +151,6 @@ public class FireAndForget extends AbstractFlaky {
 
 				// Analyze if a() calls a smelly method b(), then a is also smelly().
 				case "analyzeRelationState": {
-					System.out.println("analyzeRelationState after");
 					initTestSmells(n);
 
 					testMethod = new TestMethod(n.getNameAsString(), n.getBegin().get().line);
@@ -186,43 +177,44 @@ public class FireAndForget extends AbstractFlaky {
 		public void visit(MethodCallExpr n, Void arg) {
 
 			if (currentMethod != null && state.equals("analyze")) {
-				System.out.println("MethodCallExpr: " + n.getNameAsString());
 				String base = ASTHelper.checkIfClassMember(n);
 
 				if (base.equals("empty")) {
 					IntelMethod methodData = ASTHelper.getMethod(currentMethod.getNameAsString(), this.allMethodsData);
 					if (!n.getNameAsString().equals(currentMethod.getNameAsString())) {
-						System.out.println("methodData: " + n.getNameAsString());
 						methodData.addMethod(n.getNameAsString());
 					}
 				} else if (n.getScope().isPresent()) {
 
-					System.out.println("PresentScope: " + n);
 					// Look for external calls on object that are followed by Thread.sleep(X).
 					for (String expr : externalCalls) {
-
 						if (n.toString().toLowerCase().contains(expr)) {
-							System.out.println("KIWI: " + expr);
-
 							this.lineNrExternal = n.getBegin().get().line;
-							System.out.println("CAME HERE2: " + lineNrExternal);
 						}
 					}
 
 					if (n.toString().contains("Thread.sleep")) {
-						System.out.println("THREAD:SLEEP: " + n);
 						int currentLine = n.getBegin().get().line;
-						System.out.println("currentLine: " + currentLine);
-						System.out.println("lineNrExternal: " + lineNrExternal);
-
 						if (this.lineNrExternal < currentLine) {
-							System.out.println("true right");
 							this.hasFlaky = true;
 						}
 					}
 				}
 			}
 			super.visit(n, arg);
+		}
+
+		// If there is a thread.sleep in a while, then they're are obvisouly pooling
+		// which is a bad pattern
+		// Look at https://martinfowler.com/articles/nonDeterminism.html example
+		@Override
+		public void visit(WhileStmt n, Void arg) {
+			super.visit(n, arg);
+			if (currentMethod != null && state.equals("analyze")) {
+				if (n.getBody().toString().contains("Thread.sleep")) {
+					this.hasFlaky = true;
+				}
+			}
 		}
 
 		public boolean analyzeRelations(MethodDeclaration n) {
@@ -246,42 +238,3 @@ public class FireAndForget extends AbstractFlaky {
 	}
 
 }
-
-//@Override
-//public void visit(ExpressionStmt n, Void arg) {
-//	if (currentMethod != null) {
-//		System.out.println("ExpressionStmt: " + n);
-//
-//		if (containerContain(externalCalls, n.toString())) {
-//			System.out.println("THISLINE: " + n);
-//			this.lineNrExternal = n.getBegin().get().line;
-//			metaData.add(
-//					new MetaData(n.getBegin().get().line, n.getClass().getSimpleName(), n.toString(), true));
-//		}
-//		if (containerContain(asyncWords, n.toString())) {
-//			if (metaData.size() > 0)
-//				metaData.get(metaData.size() - 1).setFlaky(false);
-//		}
-//	}
-//	super.visit(n, arg);
-//}
-
-//@Override
-//public void visit(SynchronizedStmt n, Void arg) {
-//
-//	if (currentMethod != null && state.equals("analyze")) {
-//		System.out.println("SynchronizedStmt: " + n.toString());
-//	}
-//
-//	super.visit(n, arg);
-//}
-
-//Expression e = n.getExpression();
-//
-//List<NameExpr> a = e.findAll(NameExpr.class);
-//for (NameExpr expr : a) {
-//	System.out.println("EXPR: " + expr);
-//}
-
-//System.out.println("a: " + a.size());
-//System.out.println("Expression: " + e);

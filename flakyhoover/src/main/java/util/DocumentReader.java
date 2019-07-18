@@ -31,8 +31,8 @@ public class DocumentReader {
 			String category = csvRecord.get(5);
 			String version = csvRecord.get(6);
 
-			System.out.println("Record No - " + csvRecord.getRecordNumber());
-			System.out.println("---------------");
+//			System.out.println("Record No - " + csvRecord.getRecordNumber());
+//			System.out.println("---------------");
 
 			int start = testName.lastIndexOf(".");
 			int end = testName.length();

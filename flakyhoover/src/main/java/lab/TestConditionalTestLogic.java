@@ -1,11 +1,13 @@
 package lab;
 
 import java.math.BigDecimal;
+import java.net.CookieManager;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Map;
 
 public class TestConditionalTestLogic {
 	List<String> classtestValues = new ArrayList<String>(Arrays.asList("setUp", "tearDown"));
@@ -213,6 +215,33 @@ public class TestConditionalTestLogic {
 			int actual = sut.calculate(values.a, values.b);
 			// Verify Outcome
 			assertEquals(message(i), values.expectedSum, actual);
+		}
+	}
+
+	// SRC:
+	// https://testsmells.github.io/pages/testsmellexamples.html#ConditionalTestLogic
+	// https://github.com/Tyde/TuCanMobile/blob/dbee8a0a738400427bb94e5bc38a9970687ac147/app/src/test/java/com/dalthed/tucan/EventsScraperTest.java
+	// Flaky
+	@Test
+	public void testSpinner() {
+		for (Map.Entry entry : sourcesMap.entrySet()) {
+
+			String id = entry.getKey();
+			Object resultObject = resultsMap.get(id);
+			if (resultObject instanceof EventsModel) {
+				EventsModel result = (EventsModel) resultObject;
+				if (result.testSpinner.runTest) {
+					System.out.println("Testing " + id + " (testSpinner)");
+					// System.out.println(result);
+					AnswerObject answer = new AnswerObject(entry.getValue(), "", new CookieManager(), "");
+					EventsScraper scraper = new EventsScraper(RuntimeEnvironment.application, answer);
+					SpinnerAdapter spinnerAdapter = scraper.spinnerAdapter();
+					assertEquals(spinnerAdapter.getCount(), result.testSpinner.data.size());
+					for (int i = 0; i < spinnerAdapter.getCount(); i++) {
+						assertEquals(spinnerAdapter.getItem(i), result.testSpinner.data.get(i));
+					}
+				}
+			}
 		}
 	}
 

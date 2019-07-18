@@ -175,6 +175,7 @@ public class SharedFixture extends AbstractFlaky {
 				if (parentType.equals("ObjectCreationExpr")) {
 					pName = currentMethod.getNameAsString();
 				}
+
 				currentMethod = n;
 
 				switch (state) {
@@ -321,7 +322,8 @@ public class SharedFixture extends AbstractFlaky {
 						// TODO : not sure if I should check for jClasses or not....
 						// Shared resources could be a file or whatever...
 
-						if (!this.jClasses.contains(callexpr) && !methodExceptions.contains(n.getNameAsString())) {
+//						if (!this.jClasses.contains(callexpr) && !methodExceptions.contains(n.getNameAsString())) {
+						if (!methodExceptions.contains(n.getNameAsString())) {
 
 							// Check for static variables
 							if (Character.isUpperCase(n.toString().charAt(0))) {
@@ -387,8 +389,9 @@ public class SharedFixture extends AbstractFlaky {
 					if (n.getScope().getParentNode().get().getNodesByType(NameExpr.class).size() > 0) {
 						String scope = n.getScope().getParentNode().get().getNodesByType(NameExpr.class).get(0)
 								.toString();
-						if (!varDeclExprArray.contains(scope) && !n.toString().contains("(")
-								&& !jClasses.contains(scope)) {
+//						if (!varDeclExprArray.contains(scope) && !n.toString().contains("(")
+//								&& !jClasses.contains(scope)) {
+						if (!varDeclExprArray.contains(scope) && !n.toString().contains("(")) {
 							methodCallArray.add(n.toString());
 						}
 					}

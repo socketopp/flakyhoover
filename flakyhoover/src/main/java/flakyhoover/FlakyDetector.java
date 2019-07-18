@@ -9,6 +9,10 @@ import java.util.stream.Collectors;
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 
+import flakes.ConditionalTestLogic;
+import flakes.FireAndForget;
+import flakes.IndirectTesting;
+import flakes.ResourceOptimism;
 import flakes.SharedFixture;
 
 public class FlakyDetector {
@@ -32,20 +36,11 @@ public class FlakyDetector {
 
 	private void initializeFlakyInstances() {
 		flakyInst = new ArrayList<>();
-//		flakyInst.add(new VariableCond());
-//		flakyInst.add(new FlakyAsync());
-//		flakyInst.add(new CondTimeout());
-//		flakyInst.add(new TestRunWar_spec());
-//		flakyInst.add(new TestRunWarNew());
-//		flakyInst.add(new ResourceOptimism_old());
-
-//		flakyInst.add(new ConditionalTestLogic());
-//		flakyInst.add(new FireAndForget());
-//		flakyInst.add(new ResourceOptimism());
-//		flakyInst.add(new IndirectTesting());
+		flakyInst.add(new ConditionalTestLogic());
+		flakyInst.add(new FireAndForget());
+		flakyInst.add(new ResourceOptimism());
+		flakyInst.add(new IndirectTesting());
 		flakyInst.add(new SharedFixture());
-
-//		flakyInst.add(new ResourceLeak());
 
 	}
 

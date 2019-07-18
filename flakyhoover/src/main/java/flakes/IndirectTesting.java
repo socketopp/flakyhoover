@@ -12,14 +12,17 @@ import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.VariableDeclarator;
+import com.github.javaparser.ast.expr.ClassExpr;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.expr.NameExpr;
+import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 
 import flakyhoover.AbstractFlaky;
 import flakyhoover.AbstractFlakyElement;
 import flakyhoover.IntelMethod;
+import flakyhoover.Main;
 import flakyhoover.TestMethod;
 import util.ASTHelper;
 import util.TestSmell;
@@ -67,15 +70,10 @@ public class IndirectTesting extends AbstractFlaky {
 
 		classVisitor.setState("analyze");
 		classVisitor.visit(testFileCompilationUnit, null);
+
 		classVisitor.setState("analyzeRelationState");
 		classVisitor.visit(testFileCompilationUnit, null);
 
-		// Testing
-//		System.out.println("indirectClasses: ");
-//		Util.genericPrint(classVisitor.indirectClasses);
-//		System.out.println("classVariables: ");
-//		Util.genericPrint(classVisitor.classVariables);
-//		System.out.println("");
 	}
 
 	private class ClassVisitor extends VoidVisitorAdapter<Void> {
@@ -87,7 +85,7 @@ public class IndirectTesting extends AbstractFlaky {
 		private ArrayList<String> jClasses = Util.getAllJavaClasses();
 		private List<String> exceptions = new ArrayList<String>(
 				Arrays.asList("Boolean", "Byte", "Short", "Character", "toString", "Integer", "Long", "Float", "Double",
-						"", "Collections", "Math", "assert", "assertEquals", "assertTrue", "assertFalse",
+						"TestRunner", "", "Collections", "Math", "assert", "assertEquals", "assertTrue", "assertFalse",
 						"assertNotNull", "assertNull", "assertSame", "assertNotSame", "assertArrayEquals", "fail"));
 
 		private TestMethod testMethod;
@@ -99,17 +97,18 @@ public class IndirectTesting extends AbstractFlaky {
 		private String flakinessType = "test-order-dependency";
 		private String state;
 		private String className;
+		private String methodName;
+		private int scope = 0;
+		private MethodDeclaration[] scopes = new MethodDeclaration[1000];
+		String parentType = null;
 
 		private void initTestSmells(MethodDeclaration n) {
+
 			testSmell.setFlakinessType(flakinessType);
 			testSmell.setProject(projectName);
 			testSmell.setTestMethod(n.getNameAsString());
 			testSmell.setSmellType(getFlakyName());
 			testSmell.setTestClass(fileName);
-		}
-
-		public String getState() {
-			return state;
 		}
 
 		public void setState(String state) {
@@ -120,76 +119,76 @@ public class IndirectTesting extends AbstractFlaky {
 		// Must check class if they exist in project structure,
 		@Override
 		public void visit(ClassOrInterfaceDeclaration n, Void arg) {
-			System.out.println("ClassOrInterfaceDeclaration: " + n.getNameAsString());
 			if (!isTestClass) {
 				isTestClass = Util.isValidTestClass(n);
 				className = Util.removeTest(n.getNameAsString());
 			}
-
 			super.visit(n, arg);
 		}
 
 		@Override
 		public void visit(MethodDeclaration n, Void arg) {
-			System.out.println("");
-			System.out.println("MethodDeclaration: " + n.getNameAsString());
 
 			if (isTestClass) {
+				parentType = n.getParentNode().get().getClass().getSimpleName();
+				scope++;
+				scopes[scope] = n;
 
 				switch (state) {
 				case "analyze": {
 					currentMethod = n;
-
 					ASTHelper.addIndirectParams(n, this.indirectClasses, jClasses, className); // Check if necessary
+					if (parentType.equals("ClassOrInterfaceDeclaration")) {
+						methodName = Util.removeTest(n.getNameAsString());
+						this.allMethodsData.add(new IntelMethod(n.getNameAsString(), false));
+						this.allClassMethods.add(n.getNameAsString());
+						initTestSmells(n);
+						testMethod = new TestMethod(n.getNameAsString(), n.getBegin().get().line);
+						testMethod.setHasFlaky(false); // default value is false (i.e. no smell)
+					}
 
-					this.allMethodsData.add(new IntelMethod(n.getNameAsString(), false));
-					this.allClassMethods.add(n.getNameAsString());
-
-					initTestSmells(n);
-					testMethod = new TestMethod(n.getNameAsString(), n.getBegin().get().line);
-					testMethod.setHasFlaky(false); // default value is false (i.e. no smell)
 					break;
 				}
 				}
 
 				super.visit(n, arg);
 
-				System.out.println("");
-
 				switch (state) {
 				case "analyze": {
-
+					scope--;
 					testMethod.setHasFlaky(hasFlaky);
-					if (hasFlaky) {
+
+					if (hasFlaky && scope == 0) {
+						currentMethod = scopes[1];
 						testSmells.add(testSmell);
 						flakyElementList.add(testMethod);
 						ASTHelper.setMethodStatusFlaky(n, allMethodsData, true);
 					}
-					testSmell = new TestSmell();
-					hasFlaky = false;
-					currentMethod = null;
 
+					if (parentType.equals("ClassOrInterfaceDeclaration") || scope == 0) {
+						testSmell = new TestSmell();
+						currentMethod = null;
+						hasFlaky = false;
+					}
 					break;
 				}
 
-				// Analyze if a() calls a smelly method b(), then a is also smelly().
 				case "analyzeRelationState": {
-					System.out.println("analyzeRelationState after");
 					initTestSmells(n);
-
 					testMethod = new TestMethod(n.getNameAsString(), n.getBegin().get().line);
 					testMethod.setHasFlaky(false);
 					hasFlaky = analyzeRelations(n);
-
 					if (hasFlaky) {
 						testMethod.setHasFlaky(true);
 						testSmells.add(testSmell);
 						flakyElementList.add(testMethod);
 					}
-					hasFlaky = false;
-					testSmell = new TestSmell();
-					testMethod.addDataItem("ResourceOptimismCount", "0");
-//				testMethod.addMetaDataItem("VariableCond", metaData);
+
+					if (parentType.equals("ClassOrInterfaceDeclaration")) {
+						hasFlaky = false;
+						testSmell = new TestSmell();
+						testMethod.addDataItem("ResourceOptimismCount", "0");
+					}
 
 					break;
 
@@ -201,14 +200,14 @@ public class IndirectTesting extends AbstractFlaky {
 		@Override
 		public void visit(FieldDeclaration n, Void arg) {
 			if (currentMethod == null && state.equals("analyze")) {
-				System.out.println("FieldDeclaration: " + n.toString());
 
 				for (VariableDeclarator variableDeclarator : n.getVariables()) {
 					String type = variableDeclarator.getTypeAsString();
 					String name = variableDeclarator.getNameAsString();
 
 					// Not sure, but check if it is referenced in that case we class it as smelly???
-					if (!jClasses.contains(type) && !type.equals(className)) {
+					if (!jClasses.contains(type) && ASTHelper.checkIfEqMethodOrClass(type, className, methodName)
+							|| Main.getAllProductionFiles().contains(className)) {
 						indirectClasses.add(name);
 						// Since it is a class member and indirectClass object used in testmethod
 						classVariables.add(name);
@@ -219,19 +218,23 @@ public class IndirectTesting extends AbstractFlaky {
 			super.visit(n, arg);
 		}
 
-//		VariableDeclarationExpr
 		@Override
 		public void visit(VariableDeclarator n, Void arg) {
-
+			if (currentMethod == null) {
+				currentMethod = scopes[scope];
+			}
 			if (currentMethod != null && state.equals("analyze")) {
-				System.out.println("VariableDeclarator: " + n.toString());
 
 				String type = n.getTypeAsString();
 				String name = n.getNameAsString();
+				type = type.replace("[]", "");
+				if (!jClasses.contains(type)) {
+					// TODO add checkifEq in this file
+					if (ASTHelper.checkIfEqMethodOrClass(type, className, methodName)) {
+						indirectClasses.add(name);
 
-				if (!jClasses.contains(type) && !type.equals(className)) {
-					indirectClasses.add(name);
-					hasFlaky = true; // ?
+						hasFlaky = true;
+					}
 				}
 			}
 			super.visit(n, arg);
@@ -239,15 +242,17 @@ public class IndirectTesting extends AbstractFlaky {
 
 		@Override
 		public void visit(MethodCallExpr n, Void arg) {
+
+			if (currentMethod == null) {
+				currentMethod = scopes[scope];
+			}
+
 			if (currentMethod != null && state.equals("analyze")) {
-				System.out.println("MethodCallExpr: " + n.toString());
 				if (n.getScope().isPresent()) {
-					System.out.println("getScope: " + n.toString());
 
 					// Go through parameters
 					if (n.getArguments().size() > 0) {
 						for (Expression expr : n.getArguments()) {
-							System.out.println("expr1: " + expr);
 							if (indirectClasses.contains(expr.toString())) {
 								this.hasFlaky = true;
 							}
@@ -255,19 +260,32 @@ public class IndirectTesting extends AbstractFlaky {
 					}
 
 					// Check for exception here Integer.ParseInt
-
 					// Check if object is among indirect classes is used
 					// obj.getInstance().someMethod(); get obj (nameexpr) and check if it is in
 					// indirectClasses.
-					if (n.getScope().get() instanceof NameExpr) {
+					if (n.getScope().get() instanceof ClassExpr) {
+						ClassExpr expr = ((ClassExpr) n.getScope().get());
+						String classExpr = expr.getTypeAsString();
+						if (!jClasses.contains(classExpr) && !classExpr.equals(className)
+								&& !classExpr.toLowerCase().equals(methodName)
+								|| Main.getAllProductionFiles().contains(className)) {
+							this.hasFlaky = true;
+						}
+					}
+
+					else if (n.getScope().get() instanceof NameExpr) { // && n.findAncestor(VariableDeclarator.class) ==
+																		// null) {
+
 						NameExpr nameExpr = ((NameExpr) n.getScope().get());
-						System.out.println("nameExpr: " + nameExpr);
 						// Check for static class references such as = new
 						// Subcollection(NutchConfiguration.create());
 
 						if ((indirectClasses.contains(nameExpr.toString()) && !exceptions.contains(nameExpr.toString()))
 								|| (Character.isUpperCase(nameExpr.toString().charAt(0))
-										&& !exceptions.contains(nameExpr.toString()))) {
+										&& !jClasses.contains(nameExpr.toString())
+										&& !exceptions.contains(nameExpr.toString())
+										&& !nameExpr.toString().toLowerCase().equals(className.toLowerCase()))) {
+
 							this.hasFlaky = true;
 						}
 					}
@@ -275,29 +293,21 @@ public class IndirectTesting extends AbstractFlaky {
 				} else {
 					// Go through parameters
 					// Check for exception here Integer.
-					System.out.println("else methocallexpr");
 					if (n.getArguments().size() > 0) {
+
 						for (Expression expr : n.getArguments()) {
 							if (indirectClasses.contains(expr.toString()) && !exceptions.contains(expr.toString())) {
 								this.hasFlaky = true;
+
 							}
 						}
 					}
-
-					System.out.println("FOUND  " + n.getNameAsString());
-
 					String base = ASTHelper.checkIfClassMember(n);
-
-					if (base.equals("empty")) {
-						System.out.println("BASE: " + base);
-
+					if (base.equals("empty") && parentType.equals("ClassOrInterfaceDeclaration")) {
 						IntelMethod methodData = ASTHelper.getMethod(currentMethod.getNameAsString(),
 								this.allMethodsData);
-
 						if (!n.getNameAsString().equals(currentMethod.getNameAsString())
 								&& !exceptions.contains(n.getNameAsString())) {
-
-							System.out.println("methodData: " + n.getNameAsString());
 							methodData.addMethod(n.getNameAsString());
 						}
 					}
@@ -307,24 +317,21 @@ public class IndirectTesting extends AbstractFlaky {
 
 		}
 
-//		@Override
-//		public void visit(ObjectCreationExpr n, Void arg) {
-//// Fix this
-//			if (currentMethod != null && state.equals("analyze")) {
-//				System.out.println("ObjectCreationExpr: " + n);
-//				if (n.getParentNode().isPresent()) {
-//					System.out.println("ObjectCreationExpr isPresent: " + n);
-//
-//					if (!(n.getParentNode().get() instanceof VariableDeclarator)) {
-//						System.out.println("hn: " + n);
-//						if (n.getType().asString().equals("File") || n.getType().asString().equals("Path")) {
-//							hasFlaky = true;
-//						}
-//					}
-//				}
-//			}
+		@Override
+		public void visit(ObjectCreationExpr n, Void arg) {
+			if (currentMethod != null && state.equals("analyze")) {
 
-//		}
+				String type = n.getTypeAsString();
+				if (!jClasses.contains(type) && ASTHelper.checkIfEqMethodOrClass(type, className, methodName)
+						|| Main.getAllProductionFiles().contains(className)) {
+					hasFlaky = true;
+
+				}
+
+			}
+			super.visit(n, arg);
+
+		}
 
 		public boolean analyzeRelations(MethodDeclaration n) {
 
@@ -335,6 +342,7 @@ public class IndirectTesting extends AbstractFlaky {
 						if (!intelMethod.isFlaky()) {
 							for (String call : intelMethod.getMethods()) {
 								if (ASTHelper.checkIfFlaky(call, allMethodsData)) {
+
 									return true;
 								}
 							}
@@ -346,16 +354,3 @@ public class IndirectTesting extends AbstractFlaky {
 		}
 	}
 }
-
-//@Override
-//public void visit(FieldAccessExpr n, Void arg) {
-//	if (currentMethod != null && state.equals("analyze")) {
-//
-//		String type = n.getScope().get
-//		String name = n.getNameAsString();
-//		System.out.println("name: " + name);
-//		System.out.println("type : " + type);
-//	}
-//}
-
-//Maybe not necessary?
