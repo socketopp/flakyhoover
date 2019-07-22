@@ -1,4 +1,4 @@
-package lab;
+package testfiles;
 
 import java.io.File;
 import java.util.ArrayList;

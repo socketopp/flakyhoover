@@ -26,54 +26,54 @@ public class AppTest extends TestCase {
 	 * Rigorous Test :-)
 	 */
 
-	private static final String FIRE_AND_FORGET = "src\\main\\java\\lab\\FireAndForgetTest.java";
+	private static final String FIRE_AND_FORGET = "src\\main\\resources\\testfiles\\FireAndForgetTest.java";
 
-	private static final String CONDITIONAL_TEST_LOGIC = "src\\main\\java\\lab\\TestConditionalTestLogic.java";
+	private static final String CONDITIONAL_TEST_LOGIC = "src\\main\\resources\\testfiles\\TestConditionalTestLogic.java";
 
-	private static final String TEST_RUN_WAR_1 = "src\\main\\java\\lab\\TestRunWarTest.java";
+	private static final String TEST_RUN_WAR_1 = "src\\main\\resources\\testfiles\\TestRunWarTest.java";
 
 	// FROM:
 	// https://github.com/apache/nutch/blob/branch-1.4/src/test/org/apache/nutch/crawl/TestGenerator.java
-	private static final String TEST_RUN_WAR_2 = "src\\main\\java\\lab\\TestGeneratorTest.java";
+	private static final String TEST_RUN_WAR_2 = "src\\main\\resources\\testfiles\\TestGeneratorTest.java";
 
 	// FROM:
 	// https://raw.githubusercontent.com/apache/nutch/branch-1.4/src/plugin/urlfilter-suffix/src/test/org/apache/nutch/urlfilter/suffix/TestSuffixURLFilter.java
-	private static final String TEST_RUN_WAR_3 = "src\\main\\java\\lab\\TestSuffixURLFilter.java";
+	private static final String TEST_RUN_WAR_3 = "src\\main\\resources\\testfiles\\TestSuffixURLFilter.java";
 
 	// FROM:
 	// https://github.com/apache/nutch/blob/branch-1.4/src/test/org/apache/nutch/plugin/TestPluginSystem.java
-	private static final String TEST_RUN_WAR_4 = "src\\main\\java\\lab\\TestPluginSystem.java";
+	private static final String TEST_RUN_WAR_4 = "src\\main\\resources\\testfiles\\TestPluginSystem.java";
 	// FROM:
 
 	// https://fossies.org/linux/misc/db-derby-10.15.1.3-src.tar.gz/db-derby-10.15.1.3-src/java/org.apache.derby.tests/org/apache/derbyTesting/functionTests/tests/lang/JoinTest.java
-	private static final String TEST_RUN_WAR_5 = "src\\main\\java\\lab\\JoinTest.java";
+	private static final String TEST_RUN_WAR_5 = "src\\main\\resources\\testfiles\\JoinTest.java";
 
-	private static final String TEST_RESOURCE_OPTIMISM = "src\\main\\java\\lab\\ResourceOptimismTest.java";
+	private static final String TEST_RESOURCE_OPTIMISM = "src\\main\\resources\\testfiles\\ResourceOptimismTest.java";
 
-	private static final String TEST_JAR_VISITOR = "src\\main\\java\\lab\\JarVisitorTest.java";
+	private static final String TEST_JAR_VISITOR = "src\\main\\resources\\testfiles\\JarVisitorTest.java";
 
 	// https://github.com/apache/nutch/blob/branch-1.4/src/plugin/subcollection/src/test/org/apache/nutch/collection/TestSubcollection.java
-	private static final String TEST_SUBCOLLECTION = "src\\main\\java\\lab\\TestSubcollection.java";
+	private static final String TEST_SUBCOLLECTION = "src\\main\\resources\\testfiles\\TestSubcollection.java";
 
 	// https://github.com/apache/nutch/blob/branch-1.4/src/plugin/index-more/src/test/org/apache/nutch/indexer/more/TestMoreIndexingFilter.java
-	private static final String TEST_MORE_INDEXING_FILTER = "src\\main\\java\\lab\\TestMoreIndexingFilter.java";
+	private static final String TEST_MORE_INDEXING_FILTER = "src\\main\\resources\\testfiles\\TestMoreIndexingFilter.java";
 
 	// https://raw.githubusercontent.com/WING-NUS/Kairos/master/src/plugin/languageidentifier/src/test/org/apache/nutch/analysis/lang/TestNGramProfile.java
-	private static final String TEST_NGRAM_PROFILE = "src\\main\\java\\lab\\TestNGramProfile.java";
+	private static final String TEST_NGRAM_PROFILE = "src\\main\\resources\\testfiles\\TestNGramProfile.java";
 
 	// https://raw.githubusercontent.com/apache/ant-ivy/2.1.x/test/java/org/apache/ivy/ant/IvyCleanCacheTest.java
-	private static final String TEST_IVY_CLEAN_CACHE = "src\\main\\java\\lab\\IvyCleanCacheTest.java";
+	private static final String TEST_IVY_CLEAN_CACHE = "src\\main\\resources\\testfiles\\IvyCleanCacheTest.java";
 
 	// https://github.com/apache/hbase/blob/0.94/src/test/java/org/apache/hadoop/hbase/filter/TestColumnPaginationFilter.java
-	private static final String TEST_COLUMN_PAGNATION_FILTER = "src\\main\\java\\lab\\TestColumnPaginationFilter.java";
+	private static final String TEST_COLUMN_PAGNATION_FILTER = "src\\main\\resources\\testfiles\\TestColumnPaginationFilter.java";
 
 	// https://github.com/apache/hbase/blob/0.94/src/test/java/org/apache/hadoop/hbase/util/TestByteBloomFilter.java
-	private static final String TEST_BYTE_BLOOM_FILTER = "src\\main\\java\\lab\\TestByteBloomFilter.java";
+	private static final String TEST_BYTE_BLOOM_FILTER = "src\\main\\resources\\testfiles\\TestByteBloomFilter.java";
 
 	// https://github.com/apache/cassandra/blob/cassandra-1.1/test/unit/org/apache/cassandra/utils/IntervalTest.java
-	private static final String TEST_INTERVAL_TREE = "src\\main\\java\\lab\\IntervalTreeTest.java";
+	private static final String TEST_INTERVAL_TREE = "src\\main\\resources\\testfiles\\IntervalTreeTest.java";
 
-	private static final String TEST_HTML_LANGUAGE_PARSER = "src\\main\\java\\lab\\TestHTMLLanguageParser.java";
+	private static final String TEST_HTML_LANGUAGE_PARSER = "src\\main\\resources\\testfiles\\TestHTMLLanguageParser.java";
 
 	@Test
 	public void testResourceOptimism() throws FileNotFoundException {

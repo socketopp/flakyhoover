@@ -1,4 +1,4 @@
-package lab;
+package testfiles;
 
 import java.math.BigDecimal;
 import java.net.CookieManager;

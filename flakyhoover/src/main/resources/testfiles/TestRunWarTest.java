@@ -1,4 +1,4 @@
-package lab;
+package testfiles;
 
 import java.io.BufferedReader;
 import java.util.Map;

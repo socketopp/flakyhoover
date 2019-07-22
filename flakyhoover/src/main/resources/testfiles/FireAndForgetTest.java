@@ -1,4 +1,4 @@
-package lab;
+package testfiles;
 
 import java.io.IOException;
 import java.sql.Connection;

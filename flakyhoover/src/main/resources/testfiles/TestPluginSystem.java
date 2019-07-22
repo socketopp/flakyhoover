@@ -17,7 +17,7 @@
 * limitations under the License.
 */
 //package lab;
-package org.apache.nutch.plugin;
+package testfiles;
 
 import java.io.File;
 import java.io.FileNotFoundException;

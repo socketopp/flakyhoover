@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package lab;
+package testfiles;
 //package org.apache.nutch.crawl;
 
 import java.io.IOException;
