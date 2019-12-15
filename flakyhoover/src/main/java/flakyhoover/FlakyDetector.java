@@ -17,9 +17,9 @@ import flakes.SharedFixture;
 
 public class FlakyDetector {
 
-	private List<AbstractFlaky> flakyInst;
+	private List<AbstractSmell> flakyInst;
 
-	public FlakyDetector(boolean testing, AbstractFlaky test) {
+	public FlakyDetector(boolean testing, AbstractSmell test) {
 		if (testing) {
 			flakyInst = new ArrayList<>();
 			flakyInst.add(test);
@@ -45,69 +45,29 @@ public class FlakyDetector {
 	}
 
 	public List<String> getFlakyNames() {
-		return flakyInst.stream().map(AbstractFlaky::getFlakyName).collect(Collectors.toList());
+		return flakyInst.stream().map(AbstractSmell::getSmellName).collect(Collectors.toList());
 	}
 
 	public TestFile detect(TestFile testFile) throws FileNotFoundException {
 		CompilationUnit productionFileCompilationUnit = null;
+		@SuppressWarnings("unused")
 		FileInputStream testFileInputStream, productionFileInputStream;
-//		System.out.println("TESTFILE.GETFILEPATH: " + testFile.getTestFilePath());
 		testFileInputStream = new FileInputStream(testFile.getTestFilePath());
-//		System.out.println("testFileInputStream " + testFileInputStream != null);
-
-//		TypeSolver reflectionTypeSolver = new ReflectionTypeSolver();
-
-//        File f = new File("C:\\Users\\Socke\\Documents\\Programming\\javavisit\\beaconsperth\\src");
-//        File f = new File("javavisit/beaconsperth/src/beaconsperth");
-
-//        C:\\Users\\Socke\\Documents\\Programming\\javavisit\\beaconsperth\\src\\
-//		TypeSolver javaParserTypeSolver = new JavaParserTypeSolver(f);
-
-//		reflectionTypeSolver.setParent(reflectionTypeSolver);
-//		CombinedTypeSolver combinedSolver = new CombinedTypeSolver();
-//		combinedSolver.add(reflectionTypeSolver);
-//		combinedSolver.add(javaParserTypeSolver);
-
-//		JavaSymbolSolver symbolSolver = new JavaSymbolSolver(combinedSolver);
-
-//		JavaParser.getStaticConfiguration().setSymbolResolver(symbolSolver);
-
-//		TypeSolver typeSolver = new CombinedTypeSolver();
-//		JavaSymbolSolver symbolSolver = new JavaSymbolSolver(typeSolver);
-
-//		JavaParser.getStaticConfiguration().setSymbolResolver(symbolSolver);
-
-//		CombinedTypeSolver combinedTypeSolver = new CombinedTypeSolver();
-//		combinedTypeSolver.add(new ReflectionTypeSolver());
-//		combinedTypeSolver.add(
-//				new JavaParserTypeSolver(new File("C:/Users/Socke/Documents/Programming/javavisit/beaconsperth/src")));
-//
-//		// Configure JavaParser to use type resolution
-//		JavaSymbolSolver symbolSolver = new JavaSymbolSolver(combinedTypeSolver);
-//		StaticJavaParser.getConfiguration().setSymbolResolver(symbolSolver);
-
-		// CompilationUnit testFileCompilationUnit = JavaParser.parse(new
-		// File(testFile.getTestFilePath()));
-
-//        StaticJavaParser
-//        CompilationUnit cu = StaticJavaParser.parse("class X { int x() { return 1 + 1.0 - 5; } }");
 
 		CompilationUnit testFileCompilationUnit = StaticJavaParser.parse(testFileInputStream);
 
-		for (AbstractFlaky flaky : flakyInst) {
-//			System.out.println("\n");
-//			System.out.println("Running: " + flaky.getFlakyName());
-//			System.out.println("path: " + testFile.getTestFilePathWithDot());
-
+		for (AbstractSmell flaky : flakyInst) {
 			try {
 				flaky.runAnalysis(testFileCompilationUnit, productionFileCompilationUnit,
 						testFile.getTestFilePathWithDot(), testFile.getApp());
 
 			} catch (FileNotFoundException e) {
-				testFile.addFlakyInst(null);
+				testFile.addSmellyInst(null);
 				continue;
 			}
-			testFile.addFlakyInst(flaky);
+
+			testFile.addSmellyInst(flaky);
+
 		}
 		return testFile;
 

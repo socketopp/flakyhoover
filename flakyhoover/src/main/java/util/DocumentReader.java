@@ -12,6 +12,36 @@ import org.apache.commons.csv.CSVRecord;
 
 public class DocumentReader {
 
+	public static List<FlakyFile> adjustedReadFromCSV(String PATH) throws IOException {
+
+		Reader reader = new FileReader(PATH);
+
+		CSVParser csvParser = new CSVParser(reader,
+				CSVFormat.DEFAULT.withFirstRecordAsHeader().withIgnoreEmptyLines(true).withDelimiter(','));
+		int id = 0;
+		ArrayList<FlakyFile> flakyFiles = new ArrayList<>();
+
+		for (CSVRecord csvRecord : csvParser) {
+
+			String url = csvRecord.get(0);
+			String sha = csvRecord.get(1);
+			String testName = csvRecord.get(2);
+			String testClass = csvRecord.get(3);
+			String testMethod = csvRecord.get(4);
+			String category = csvRecord.get(5);
+			String module = csvRecord.get(6);
+			String path = csvRecord.get(7);
+
+			flakyFiles.add(new FlakyFile(id, url, sha, testName, testClass, testMethod, category, module, path));
+
+			id++;
+		}
+		csvParser.close();
+
+		return flakyFiles;
+
+	}
+
 	public static List<FlakyFile> readFromCSV(String PATH) throws IOException {
 
 		Reader reader = new FileReader(PATH);
@@ -19,7 +49,7 @@ public class DocumentReader {
 		CSVParser csvParser = new CSVParser(reader,
 				CSVFormat.DEFAULT.withFirstRecordAsHeader().withIgnoreEmptyLines(true).withDelimiter(','));
 		int id = 0;
-		ArrayList<FlakyFile> flakyFiles = new ArrayList<FlakyFile>();
+		ArrayList<FlakyFile> flakyFiles = new ArrayList<>();
 
 		for (CSVRecord csvRecord : csvParser) {
 
@@ -31,9 +61,6 @@ public class DocumentReader {
 			String category = csvRecord.get(5);
 			String version = csvRecord.get(6);
 
-//			System.out.println("Record No - " + csvRecord.getRecordNumber());
-//			System.out.println("---------------");
-
 			int start = testName.lastIndexOf(".");
 			int end = testName.length();
 			String testMethod = testName.substring(start + 1, end);
@@ -44,23 +71,15 @@ public class DocumentReader {
 			String className = testName.substring(cStart + 1, cEnd);
 
 			if (!testMethod.contains(" ")) {
-				System.out.println("id" + id);
-				System.out.println("url : " + url);
-				System.out.println("sha : " + sha);
-				System.out.println("testCount : " + testCount);
-				System.out.println("Method: " + testMethod);
-				System.out.println("Class: " + className);
-				System.out.println("module : " + module);
-				System.out.println("testName : " + testName);
-				System.out.println("category : " + category);
-				System.out.println("version : " + version);
-				System.out.println("---------------\n\n");
+
 				flakyFiles.add(new FlakyFile(id, url, sha, Integer.parseInt(testCount), testName, module, category,
 						version, className, testMethod));
 				id++;
 			}
 
 		}
+		csvParser.close();
+		
 		return flakyFiles;
 
 	}

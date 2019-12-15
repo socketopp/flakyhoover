@@ -301,6 +301,7 @@ public class ResourceOptimismTest extends TestCase {
 
 		if (Files.isExecutable(regionDir, options)) {
 			dataFile = File.createTempFile("features", null, null, regionDir);
+			File file = new File(regionDir);
 		}
 	}
 

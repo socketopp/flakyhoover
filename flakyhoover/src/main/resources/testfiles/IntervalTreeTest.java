@@ -32,6 +32,7 @@ import com.thoughtworks.xstream.io.path.Path;
 import junit.framework.TestCase;
 
 public class IntervalTreeTest extends TestCase {
+
 	private static volatile RandomShit rand = new RandomShit();
 
 	@Test

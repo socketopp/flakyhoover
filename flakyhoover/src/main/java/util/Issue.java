@@ -1,5 +1,6 @@
 package util;
 
+@SuppressWarnings("unused")
 public class Issue {
 	private String fileName = "File 1";
 	private String packageName = "Package 1";

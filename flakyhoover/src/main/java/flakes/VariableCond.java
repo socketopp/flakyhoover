@@ -13,20 +13,21 @@ import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.stmt.WhileStmt;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 
-import flakyhoover.AbstractFlaky;
-import flakyhoover.AbstractFlakyElement;
+import flakyhoover.AbstractSmell;
+import flakyhoover.AbstractSmellElement;
 import flakyhoover.MetaData;
 import flakyhoover.TestMethod;
 import util.TestSmell;
 
-public class VariableCond extends AbstractFlaky {
-	private List<AbstractFlakyElement> flakyElementList;
+public class VariableCond extends AbstractSmell {
+	private List<AbstractSmellElement> smellyElementList;
 	protected String fileName;
 	protected String projectName;
+	protected String methodName;
 	protected ArrayList<TestSmell> testSmells;
 
 	public VariableCond() {
-		flakyElementList = new ArrayList<>();
+		smellyElementList = new ArrayList<>();
 	}
 
 	@Override
@@ -35,12 +36,12 @@ public class VariableCond extends AbstractFlaky {
 	}
 
 	@Override
-	public boolean getHasFlaky() {
-		return flakyElementList.stream().filter(x -> x.getHasFlaky()).count() >= 1;
+	public boolean getHasSmell() {
+		return smellyElementList.stream().filter(x -> x.getHasSmell()).count() >= 1;
 	}
 
 	@Override
-	public String getFlakyName() {
+	public String getSmellName() {
 		return "VariableCond";
 	}
 
@@ -50,42 +51,42 @@ public class VariableCond extends AbstractFlaky {
 
 		this.fileName = testClassName;
 		this.projectName = projectName;
-		testSmells = new ArrayList<TestSmell>();
+		testSmells = new ArrayList<>();
 		VariableCond.ClassVisitor classVisitor;
 		classVisitor = new VariableCond.ClassVisitor();
 		classVisitor.visit(testFileCompilationUnit, null);
 	}
 
 	@Override
-	public List<AbstractFlakyElement> getFlakyElements() {
-		return flakyElementList;
+	public List<AbstractSmellElement> getSmellyElements() {
+		return smellyElementList;
 	}
 
 	private class ClassVisitor extends VoidVisitorAdapter<Void> {
 		private MethodDeclaration currentMethod = null;
-		private boolean hasFlaky = false;
+		private boolean hasSmell = false;
 		TestMethod testMethod;
 		private List<String> missingCondVars = new ArrayList<>();
-		private List<MetaData> metaData = new ArrayList<MetaData>();
+		private List<MetaData> metaData = new ArrayList<>();
 		private TestSmell testSmell = new TestSmell();
 
 		@Override
 		public void visit(MethodDeclaration n, Void arg) {
 			currentMethod = n;
 			testMethod = new TestMethod(n.getNameAsString(), n.getBegin().get().line);
-			testMethod.setHasFlaky(false); // default value is false (i.e. no smell)
+			testMethod.setHasSmell(false); // default value is false (i.e. no smell)
 
 			testSmell.setFlakinessType("concurrency");
 			testSmell.setProject(projectName);
 			testSmell.setTestMethod(n.getNameAsString());
-			testSmell.setSmellType(getFlakyName());
+			testSmell.setSmellType(getSmellName());
 			testSmell.setTestClass(fileName);
 
 			super.visit(n, arg);
 
-			testMethod.setHasFlaky(metaData.size() > 0 && hasFlaky);
+			testMethod.setHasSmell(metaData.size() > 0 && hasSmell);
 
-			if (metaData.size() > 0 && hasFlaky) {
+			if (metaData.size() > 0 && hasSmell) {
 				testSmells.add(testSmell);
 			}
 
@@ -95,17 +96,17 @@ public class VariableCond extends AbstractFlaky {
 
 			testMethod.addMetaDataItem("VariableCond", metaData);
 
-			if (testMethod.getHasFlaky()) {
-				flakyElementList.add(testMethod);
+			if (testMethod.getHasSmell()) {
+				smellyElementList.add(testMethod);
 			}
 
 			// reset values for next method
 			currentMethod = null;
-			hasFlaky = false;
+			hasSmell = false;
 		}
 
 		private Set<String> getAllVariables(String conditionExpression) {
-			Set<String> allMatches = new HashSet<String>();
+			Set<String> allMatches = new HashSet<>();
 			Matcher m = Pattern.compile("[a-zA-Z$_][a-zA-Z0-9$_]*").matcher(conditionExpression);
 			while (m.find()) {
 				allMatches.add(m.group());
@@ -124,12 +125,12 @@ public class VariableCond extends AbstractFlaky {
 						continue;
 					} else {
 						missingCondVars.add(var);
-						hasFlaky = true;
+						hasSmell = true;
 					}
 				}
 
-				if (hasFlaky && n.getBody().toString().contains("break")) {
-					hasFlaky = false;
+				if (hasSmell && n.getBody().toString().contains("break")) {
+					hasSmell = false;
 				} else {
 					metaData.add(
 							new MetaData(n.getBegin().get().line, n.getClass().getSimpleName(), n.toString(), true));

@@ -5,13 +5,13 @@ import java.util.Set;
 
 public class IntelMethod {
 	public String name;
-	public boolean isFlaky;
+	public boolean isSmelly;
 	public Set<String> calls;
 
-	public IntelMethod(String name, boolean isFlaky) {
+	public IntelMethod(String name, boolean isSmelly) {
 		this.name = name;
-		this.isFlaky = isFlaky;
-		this.calls = new HashSet<String>();
+		this.isSmelly = isSmelly;
+		this.calls = new HashSet<>();
 	}
 
 	public String getName() {
@@ -22,19 +22,19 @@ public class IntelMethod {
 		this.name = name;
 	}
 
-	public boolean isFlaky() {
-		return isFlaky;
+	public boolean isSmelly() {
+		return isSmelly;
 	}
 
-	public void setFlaky(boolean isFlaky) {
-		this.isFlaky = isFlaky;
+	public void setSmelly(boolean isSmelly) {
+		this.isSmelly = isSmelly;
 	}
 
 	public void addMethod(String method) {
 		calls.add(method);
 	}
-	
-	public Set<String> getMethods(){
+
+	public Set<String> getMethods() {
 		return this.calls;
 	}
 }

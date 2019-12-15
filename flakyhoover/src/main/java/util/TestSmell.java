@@ -7,14 +7,25 @@ public class TestSmell {
 	private String testMethod;
 	private String smellType;
 	private String flakinessType;
+	private boolean isSmelly;
 
-	public TestSmell(String project, String testClass, String testMethod, String smellType, String flakinessType) {
+	public boolean isSmelly() {
+		return isSmelly;
+	}
+
+	public void setSmelly(boolean isSmelly) {
+		this.isSmelly = isSmelly;
+	}
+
+	public TestSmell(String project, String testClass, String testMethod, String smellType, String flakinessType,
+			boolean isSmelly) {
 		super();
 		this.project = project;
 		this.testClass = testClass;
 		this.testMethod = testMethod;
 		this.smellType = smellType;
 		this.flakinessType = flakinessType;
+		this.isSmelly = isSmelly;
 	}
 
 	public TestSmell() {

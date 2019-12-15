@@ -4,11 +4,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class TestMethod extends AbstractFlakyElement {
+public class TestMethod extends AbstractSmellElement {
 
 	private String methodName;
 	private int lineNr;
-	private boolean hasFlaky;
+	private boolean hasSmell;
 	private Map<String, String> data;
 
 	private Map<String, List<MetaData>> metaData;
@@ -20,8 +20,8 @@ public class TestMethod extends AbstractFlakyElement {
 		metaData = new HashMap<>();
 	}
 
-	public void setHasFlaky(boolean hasFlaky) {
-		this.hasFlaky = hasFlaky;
+	public void setHasSmell(boolean hasSmell) {
+		this.hasSmell = hasSmell;
 	}
 
 	public void addDataItem(String name, String value) {
@@ -39,8 +39,8 @@ public class TestMethod extends AbstractFlakyElement {
 	}
 
 	@Override
-	public boolean getHasFlaky() {
-		return hasFlaky;
+	public boolean getHasSmell() {
+		return hasSmell;
 	}
 
 	@Override

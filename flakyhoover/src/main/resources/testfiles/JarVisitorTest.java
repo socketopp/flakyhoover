@@ -25,12 +25,30 @@ public class JarVisitorTest extends PackagingTestCase {
 						protected URLConnection openConnection(URL u) throws IOException {
 							assertEquals(ExplodedJarVisitor.class.getName(), jarVisitor.getClass().getName());
 
-							return null;
+							return new URLStreamHandler() {
+								protected URLConnection openConnection2(URL u) throws IOException {
+									assertEquals(ExplodedJarVisitor.class.getName(), jarVisitor.getClass().getName());
+
+									class A {
+										void idiotMethod() {
+
+										}
+									}
+
+									return null;
+								}
+							};
 						}
 					};
 				return null;
 			}
 		});
+	}
+
+	// Flaky
+	@Test
+	public void relationTest() {
+		testJarVisitorFactory();
 	}
 
 	// SRC:
@@ -52,6 +70,7 @@ public class JarVisitorTest extends PackagingTestCase {
 				return null;
 			}
 		});
+
 		URL jarUrl = new URL("file:./target/packages/defaultpar.par");
 		JarVisitor jarVisitor = JarVisitorFactory.getVisitor(jarUrl, getFilters(), null);
 		assertEquals(FileZippedJarVisitor.class.getName(), jarVisitor.getClass().getName());
@@ -90,7 +109,7 @@ public class JarVisitorTest extends PackagingTestCase {
 		assertEquals(ExplodedJarVisitor.class.getName(), jarVisitor.getClass().getName());
 	}
 
-	// NOT FLAKY
+	// NOT FLAKY, but since it uses JarVisitorFactory.. it is flaky :/
 	@Test
 	public void testFileZippedJarVisitor() throws Exception {
 

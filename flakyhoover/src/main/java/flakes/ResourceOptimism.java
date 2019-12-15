@@ -20,17 +20,17 @@ import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.github.javaparser.ast.expr.VariableDeclarationExpr;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 
-import flakyhoover.AbstractFlaky;
-import flakyhoover.AbstractFlakyElement;
+import flakyhoover.AbstractSmell;
+import flakyhoover.AbstractSmellElement;
 import flakyhoover.IntelMethod;
 import flakyhoover.TestMethod;
 import util.ASTHelper;
 import util.TestSmell;
 import util.Util;
 
-public class ResourceOptimism extends AbstractFlaky {
+public class ResourceOptimism extends AbstractSmell {
 
-	private List<AbstractFlakyElement> flakyElementList;
+	private List<AbstractSmellElement> smellyElementList;
 	private String fileName;
 	private String projectName;
 	private ArrayList<TestSmell> testSmells;
@@ -40,22 +40,22 @@ public class ResourceOptimism extends AbstractFlaky {
 	}
 
 	public ResourceOptimism() {
-		flakyElementList = new ArrayList<>();
+		smellyElementList = new ArrayList<>();
 	}
 
 	@Override
-	public boolean getHasFlaky() {
-		return flakyElementList.stream().filter(x -> x.getHasFlaky()).count() >= 1;
+	public boolean getHasSmell() {
+		return smellyElementList.stream().filter(x -> x.getHasSmell()).count() >= 1;
 	}
 
 	@Override
-	public String getFlakyName() {
+	public String getSmellName() {
 		return "ResourceOptimism";
 	}
 
 	@Override
-	public List<AbstractFlakyElement> getFlakyElements() {
-		return flakyElementList;
+	public List<AbstractSmellElement> getSmellyElements() {
+		return smellyElementList;
 	}
 
 	@Override
@@ -63,7 +63,7 @@ public class ResourceOptimism extends AbstractFlaky {
 			String testClassName, String projectName) throws FileNotFoundException {
 		this.fileName = testClassName;
 		this.projectName = projectName;
-		testSmells = new ArrayList<TestSmell>();
+		testSmells = new ArrayList<>();
 		ResourceOptimism.ClassVisitor classVisitor;
 		classVisitor = new ResourceOptimism.ClassVisitor();
 
@@ -72,30 +72,11 @@ public class ResourceOptimism extends AbstractFlaky {
 		classVisitor.setState("analyzeRelationState");
 		classVisitor.visit(testFileCompilationUnit, null);
 
-//		System.out.println("methodVariables: ");
-//		Util.genericPrint(classVisitor.methodVariables);
-//
-//		System.out.println("classVariables: ");
-//		Util.genericPrint(classVisitor.classVariables);
-//
-//		System.out.println("declaredVars: ");
-//		Util.genericPrintMap(classVisitor.varDeclExpr);
-
-//		classVisitor.setState("collectState");
-//		classVisitor.visit(testFileCompilationUnit, null);
-//
-//		classVisitor.setState("analyzeFixtureState");
-//		classVisitor.visit(testFileCompilationUnit, null);
-//
-//		classVisitor.setState("analyzeRelationState");
-//		classVisitor.visit(testFileCompilationUnit, null);
-
-//		Util.genericPrint(classVisitor.allClassMethods);
 	}
 
 	private class ClassVisitor extends VoidVisitorAdapter<Void> {
 
-		private boolean hasFlaky = false;
+		private boolean hasSmell = false;
 		private boolean isTestClass = false;
 
 		private TestMethod testMethod;
@@ -105,9 +86,9 @@ public class ResourceOptimism extends AbstractFlaky {
 		private Set<String> methodVariables = new HashSet<>();
 		private Set<String> classVariables = new HashSet<>();
 		private List<String> okVariables = new ArrayList<>();
-		private Set<IntelMethod> allMethodsData = new HashSet<IntelMethod>();
-		private Set<String> allClassMethods = new HashSet<String>();
-		private Map<String, Set<String>> varDeclExpr = new HashMap<String, Set<String>>();
+		private Set<IntelMethod> allMethodsData = new HashSet<>();
+		private Set<String> allClassMethods = new HashSet<>();
+		private Map<String, Set<String>> varDeclExpr = new HashMap<>();
 
 		private String flakinessType = "input-output";
 		private String state;
@@ -120,8 +101,10 @@ public class ResourceOptimism extends AbstractFlaky {
 			testSmell.setFlakinessType(flakinessType);
 			testSmell.setProject(projectName);
 			testSmell.setTestMethod(n.getNameAsString());
-			testSmell.setSmellType(getFlakyName());
+			testSmell.setSmellType(getSmellName());
 			testSmell.setTestClass(fileName);
+			testSmell.setSmelly(false);
+
 		}
 
 		@Override
@@ -148,12 +131,13 @@ public class ResourceOptimism extends AbstractFlaky {
 					this.allClassMethods.add(n.getNameAsString());
 
 					ASTHelper.addParams(n, methodVariables); // Check if necessary
-					Util.genericPrint(methodVariables);
 					initTestSmells(n);
 					testMethod = new TestMethod(n.getNameAsString(), n.getBegin().get().line);
-					testMethod.setHasFlaky(false); // default value is false (i.e. no smell)
+					testMethod.setHasSmell(false); // default value is false (i.e. no smell)
 					break;
 				}
+				default:
+					break;
 				}
 
 				super.visit(n, arg);
@@ -161,17 +145,21 @@ public class ResourceOptimism extends AbstractFlaky {
 				switch (state) {
 				case "analyze": {
 
-					testMethod.setHasFlaky(hasFlaky);
-					if (hasFlaky) {
-						testSmells.add(testSmell);
-						flakyElementList.add(testMethod);
-						ASTHelper.setMethodStatusFlaky(n, allMethodsData, true);
+					if (testMethod != null) {
+
+						testMethod.setHasSmell(hasSmell);
+						if (hasSmell) {
+							testSmell.setSmelly(true);
+							testSmells.add(testSmell);
+							smellyElementList.add(testMethod);
+							ASTHelper.setMethodStatusSmelly(n, allMethodsData, true);
+						}
+						testSmell = new TestSmell();
+						hasSmell = false;
+						currentMethod = null;
+						methodVariables = new HashSet<>();
+						okVariables = new ArrayList<>();
 					}
-					testSmell = new TestSmell();
-					hasFlaky = false;
-					currentMethod = null;
-					methodVariables = new HashSet<>();
-					okVariables = new ArrayList<>();
 					break;
 				}
 
@@ -180,15 +168,16 @@ public class ResourceOptimism extends AbstractFlaky {
 					initTestSmells(n);
 
 					testMethod = new TestMethod(n.getNameAsString(), n.getBegin().get().line);
-					testMethod.setHasFlaky(false);
-					hasFlaky = analyzeRelations(n);
+					testMethod.setHasSmell(false);
+					hasSmell = analyzeRelations(n);
 
-					if (hasFlaky) {
-						testMethod.setHasFlaky(true);
+					if (hasSmell) {
+						testMethod.setHasSmell(true);
+						testSmell.setSmelly(true);
 						testSmells.add(testSmell);
-						flakyElementList.add(testMethod);
+						smellyElementList.add(testMethod);
 					}
-					hasFlaky = false;
+					hasSmell = false;
 					testSmell = new TestSmell();
 					testMethod.addDataItem("ResourceOptimismCount", "0");
 					break;
@@ -213,19 +202,19 @@ public class ResourceOptimism extends AbstractFlaky {
 									&& !listOfDeclaredVars.contains(argument))
 									|| ((methodVariables.contains(argument) && !okVariables.contains(argument)
 											&& !listOfDeclaredVars.contains(argument)))) {
-								hasFlaky = true;
+								hasSmell = true;
 							}
 						}
 					}
 				}
 
 				// If han object is created as an rvalue then in an variableDeclarator, then set
-				// it imediately to hasFlaky.
+				// it imediately to hasSmell.
 				if (n.getParentNode().isPresent()) {
 
 					if (!(n.getParentNode().get() instanceof VariableDeclarator)) {
 						if (n.getType().asString().equals("File") || n.getType().asString().equals("Path")) {
-							hasFlaky = true;
+							hasSmell = true;
 						}
 					}
 				}
@@ -348,7 +337,7 @@ public class ResourceOptimism extends AbstractFlaky {
 						referencedVariable = n.getChildNodes().get(0).toString();
 
 					}
-					ArrayList<String> args = new ArrayList<String>();
+					ArrayList<String> args = new ArrayList<>();
 
 					// Goes here if for instance we call object.method(params).
 					// Then we need to check if object is file/path or any of the params are
@@ -372,7 +361,7 @@ public class ResourceOptimism extends AbstractFlaky {
 								&& !listOfDeclaredVars.contains(argument))
 								|| ((methodVariables.contains(argument) && !okVariables.contains(argument)
 										&& !listOfDeclaredVars.contains(argument)))) {
-							hasFlaky = true;
+							hasSmell = true;
 						}
 					}
 
@@ -383,7 +372,7 @@ public class ResourceOptimism extends AbstractFlaky {
 								|| (methodVariables.contains(referencedVariable)
 										&& !okVariables.contains(referencedVariable)
 										&& !listOfDeclaredVars.contains(referencedVariable))) {
-							hasFlaky = true;
+							hasSmell = true;
 						}
 					}
 				} else {
@@ -400,7 +389,7 @@ public class ResourceOptimism extends AbstractFlaky {
 										&& !listOfDeclaredVars.contains(argument))
 										|| ((methodVariables.contains(argument) && !okVariables.contains(argument)
 												&& !listOfDeclaredVars.contains(argument)))) {
-									hasFlaky = true;
+									hasSmell = true;
 								}
 							}
 						}
@@ -414,11 +403,11 @@ public class ResourceOptimism extends AbstractFlaky {
 
 			for (String method : allClassMethods) {
 				if (method.equals(n.getNameAsString())) {
-					if (!ASTHelper.checkIfFlaky(method, allMethodsData)) {
+					if (!ASTHelper.checkIfSmelly(method, allMethodsData)) {
 						IntelMethod intelMethod = ASTHelper.getMethod(method, allMethodsData);
-						if (!intelMethod.isFlaky()) {
+						if (!intelMethod.isSmelly()) {
 							for (String call : intelMethod.getMethods()) {
-								if (ASTHelper.checkIfFlaky(call, allMethodsData)) {
+								if (ASTHelper.checkIfSmelly(call, allMethodsData)) {
 									return true;
 								}
 							}

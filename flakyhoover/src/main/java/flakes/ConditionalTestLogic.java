@@ -26,16 +26,21 @@ import com.github.javaparser.ast.stmt.TryStmt;
 import com.github.javaparser.ast.stmt.WhileStmt;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 
-import flakyhoover.AbstractFlaky;
-import flakyhoover.AbstractFlakyElement;
+import flakyhoover.AbstractSmell;
+import flakyhoover.AbstractSmellElement;
 import flakyhoover.IntelMethod;
 import flakyhoover.TestMethod;
 import util.ASTHelper;
 import util.TestSmell;
 import util.Util;
 
-public class ConditionalTestLogic extends AbstractFlaky {
-	private List<AbstractFlakyElement> flakyElementList;
+/**
+ * 
+ * @author Socke
+ *
+ */
+public class ConditionalTestLogic extends AbstractSmell {
+	private List<AbstractSmellElement> smellyElementList;
 	protected String fileName;
 	protected String projectName;
 	protected ArrayList<TestSmell> testSmells;
@@ -45,16 +50,16 @@ public class ConditionalTestLogic extends AbstractFlaky {
 	}
 
 	public ConditionalTestLogic() {
-		flakyElementList = new ArrayList<>();
+		smellyElementList = new ArrayList<>();
 	}
 
 	@Override
-	public boolean getHasFlaky() {
-		return flakyElementList.stream().filter(x -> x.getHasFlaky()).count() >= 1;
+	public boolean getHasSmell() {
+		return smellyElementList.stream().filter(x -> x.getHasSmell()).count() >= 1;
 	}
 
 	@Override
-	public String getFlakyName() {
+	public String getSmellName() {
 		return "ConditionalTestLogic";
 	}
 
@@ -63,9 +68,11 @@ public class ConditionalTestLogic extends AbstractFlaky {
 			String testClassName, String projectName) throws FileNotFoundException {
 		this.fileName = testClassName;
 		this.projectName = projectName;
-		testSmells = new ArrayList<TestSmell>();
+
 		ConditionalTestLogic.ClassVisitor classVisitor;
 		classVisitor = new ConditionalTestLogic.ClassVisitor();
+
+		testSmells = new ArrayList<>();
 
 		classVisitor.setState("analyze");
 		classVisitor.visit(testFileCompilationUnit, null);
@@ -75,30 +82,31 @@ public class ConditionalTestLogic extends AbstractFlaky {
 	}
 
 	@Override
-	public List<AbstractFlakyElement> getFlakyElements() {
-		return flakyElementList;
+	public List<AbstractSmellElement> getSmellyElements() {
+		return smellyElementList;
 	}
 
 	private class ClassVisitor extends VoidVisitorAdapter<Void> {
 
 		private MethodDeclaration currentMethod = null;
-		private boolean hasFlaky = false;
+		private boolean hasSmell = false;
 		private int conditionCount, ifCount, switchCount, forCount, foreachCount, whileCount, tryStmt = 0;
-		TestMethod testMethod;
+		private TestMethod testMethod;
 		private TestSmell testSmell = new TestSmell();
 		private boolean isTestClass = false;
 		private String state;
 		private String flakinessType = "test-order-dependency";
-		private Set<IntelMethod> allMethodsData = new HashSet<IntelMethod>();
-		private Set<String> allClassMethods = new HashSet<String>();
-		private Set<String> allContainers = new HashSet<String>();
+		private Set<IntelMethod> allMethodsData = new HashSet<>();
+		private Set<String> allClassMethods = new HashSet<>();
+		private Set<String> allContainers = new HashSet<>();
 
 		private void initTestSmells(MethodDeclaration n) {
 			testSmell.setFlakinessType(flakinessType);
 			testSmell.setProject(projectName);
 			testSmell.setTestMethod(n.getNameAsString());
-			testSmell.setSmellType(getFlakyName());
+			testSmell.setSmellType(getSmellName());
 			testSmell.setTestClass(fileName);
+			testSmell.setSmelly(false);
 		}
 
 		@Override
@@ -127,11 +135,13 @@ public class ConditionalTestLogic extends AbstractFlaky {
 					initTestSmells(n);
 
 					testMethod = new TestMethod(n.getNameAsString(), n.getBegin().get().line);
-					testMethod.setHasFlaky(false); // default value is false (i.e. no smell)
+					testMethod.setHasSmell(false); // default value is false (i.e. no smell)
 					this.allMethodsData.add(new IntelMethod(n.getNameAsString(), false));
 					this.allClassMethods.add(n.getNameAsString());
 					break;
 				}
+				default:
+					break;
 				}
 
 				super.visit(n, arg);
@@ -139,32 +149,40 @@ public class ConditionalTestLogic extends AbstractFlaky {
 				switch (state) {
 				case "analyze": {
 
-					testMethod.setHasFlaky(conditionCount > 0 | ifCount > 0 | switchCount > 0 | foreachCount > 0
-							| forCount > 0 | whileCount > 0 | tryStmt > 0);
+					if (testMethod != null) {
 
-					testMethod.addDataItem("ConditionCount", String.valueOf(conditionCount));
-					testMethod.addDataItem("IfCount", String.valueOf(ifCount));
-					testMethod.addDataItem("SwitchCount", String.valueOf(switchCount));
-					testMethod.addDataItem("ForeachCount", String.valueOf(foreachCount));
-					testMethod.addDataItem("ForCount", String.valueOf(forCount));
-					testMethod.addDataItem("WhileCount", String.valueOf(whileCount));
+						testMethod.setHasSmell(conditionCount > 0 || ifCount > 0 || switchCount > 0 || foreachCount > 0
+								|| forCount > 0 || whileCount > 0 || tryStmt > 0);
 
-					if (testMethod.getHasFlaky()) {
-						testSmells.add(testSmell);
-						flakyElementList.add(testMethod);
-						ASTHelper.setMethodStatusFlaky(n, allMethodsData, true);
+						testMethod.addDataItem("ConditionCount", String.valueOf(conditionCount));
+						testMethod.addDataItem("IfCount", String.valueOf(ifCount));
+						testMethod.addDataItem("SwitchCount", String.valueOf(switchCount));
+						testMethod.addDataItem("ForeachCount", String.valueOf(foreachCount));
+						testMethod.addDataItem("ForCount", String.valueOf(forCount));
+						testMethod.addDataItem("WhileCount", String.valueOf(whileCount));
+
+						if (testMethod.getHasSmell()) {
+
+							testSmell.setSmelly(true);
+							testSmells.add(testSmell);
+
+							testMethod.setHasSmell(true);
+							smellyElementList.add(testMethod);
+
+							ASTHelper.setMethodStatusSmelly(n, allMethodsData, true);
+						}
+
+						testSmell = new TestSmell();
+						currentMethod = null;
+						hasSmell = false;
+						conditionCount = 0;
+						tryStmt = 0;
+						ifCount = 0;
+						switchCount = 0;
+						forCount = 0;
+						foreachCount = 0;
+						whileCount = 0;
 					}
-
-					testSmell = new TestSmell();
-					currentMethod = null;
-					hasFlaky = false;
-					conditionCount = 0;
-					tryStmt = 0;
-					ifCount = 0;
-					switchCount = 0;
-					forCount = 0;
-					foreachCount = 0;
-					whileCount = 0;
 					break;
 				}
 
@@ -173,22 +191,25 @@ public class ConditionalTestLogic extends AbstractFlaky {
 					initTestSmells(n);
 
 					testMethod = new TestMethod(n.getNameAsString(), n.getBegin().get().line);
-					testMethod.setHasFlaky(false);
-					hasFlaky = analyzeRelations(n);
+					testMethod.setHasSmell(false);
+					hasSmell = analyzeRelations(n);
 
-					if (hasFlaky) {
-						testMethod.setHasFlaky(true);
+					if (hasSmell) {
+						testMethod.setHasSmell(true);
+
 						testSmells.add(testSmell);
-						flakyElementList.add(testMethod);
+
+						smellyElementList.add(testMethod);
 
 					}
-					hasFlaky = false;
+					hasSmell = false;
 					testSmell = new TestSmell();
 
 					break;
 
 				}
-
+				default:
+					break;
 				}
 			}
 
@@ -239,6 +260,7 @@ public class ConditionalTestLogic extends AbstractFlaky {
 
 			super.visit(n, arg);
 			if (currentMethod != null && state.equals("analyze")) {
+
 				conditionCount++;
 			}
 		}
@@ -270,39 +292,36 @@ public class ConditionalTestLogic extends AbstractFlaky {
 							Expression index = arrayAccessExpr.getIndex();
 							String containerName = arrayAccessExpr.getName().toString();
 
-							if (this.allContainers.contains(containerName)) {
+							if (this.allContainers.contains(containerName) && counter != null
+									&& index.toString().contains(counter.toString())
+									&& !n.findFirst(IfStmt.class).isPresent()) {
 
-								if (index.toString().contains(counter.toString())) {
-									if (!n.findFirst(IfStmt.class).isPresent()) {
-										forCount--;
-									}
-								}
+								forCount--;
+
 							}
 							// Check for lists, arraylist, sets and vectors
 						} else if (n.getBody().findFirst(MethodCallExpr.class).isPresent()) {
 							MethodCallExpr methodCallExpr = n.getBody().findFirst(MethodCallExpr.class).get()
 									.asMethodCallExpr();
 
-							if (methodCallExpr.getScope().isPresent()) {
-								if (methodCallExpr.getScope().get() instanceof NameExpr) {
+							if (methodCallExpr.getScope().isPresent()
+									&& methodCallExpr.getScope().get() instanceof NameExpr) {
 
-									String containerName = ((NameExpr) methodCallExpr.getScope().get())
-											.getNameAsString();
+								String containerName = ((NameExpr) methodCallExpr.getScope().get()).getNameAsString();
 
-									if (this.allContainers.contains(containerName)) {
-										if (methodCallExpr.getNameAsString().equals("get")
-												&& methodCallExpr.getArguments().size() == 1) {
+								if (this.allContainers.contains(containerName)
+										&& methodCallExpr.getNameAsString().equals("get")
+										&& methodCallExpr.getArguments().size() == 1) {
 
-											String index = methodCallExpr.getArguments().get(0).toString();
-											if (index.toString().contains(counter.toString())) {
-												if (!n.findFirst(IfStmt.class).isPresent()) {
-													forCount--;
-												}
-											}
-										}
+									String index = methodCallExpr.getArguments().get(0).toString();
+
+									if (counter != null && index != null && index.contains(counter.toString())
+											&& !n.findFirst(IfStmt.class).isPresent()) {
+										forCount--;
 									}
 								}
 							}
+
 						}
 					}
 				}
@@ -389,17 +408,16 @@ public class ConditionalTestLogic extends AbstractFlaky {
 		public boolean analyzeRelations(MethodDeclaration n) {
 
 			for (String method : allClassMethods) {
-				if (method.equals(n.getNameAsString())) {
-					if (!ASTHelper.checkIfFlaky(method, allMethodsData)) {
-						IntelMethod intelMethod = ASTHelper.getMethod(method, allMethodsData);
-						if (!intelMethod.isFlaky()) {
-							for (String call : intelMethod.getMethods()) {
-								if (ASTHelper.checkIfFlaky(call, allMethodsData)) {
-									return true;
-								}
+				if (method.equals(n.getNameAsString()) && !ASTHelper.checkIfSmelly(method, allMethodsData)) {
+					IntelMethod intelMethod = ASTHelper.getMethod(method, allMethodsData);
+					if (!intelMethod.isSmelly()) {
+						for (String call : intelMethod.getMethods()) {
+							if (ASTHelper.checkIfSmelly(call, allMethodsData)) {
+								return true;
 							}
 						}
 					}
+
 				}
 			}
 			return false;

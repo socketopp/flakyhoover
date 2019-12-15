@@ -1,6 +1,7 @@
 package util;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -17,6 +18,9 @@ import com.github.javaparser.ast.body.MethodDeclaration;
 
 public class Util {
 
+	/*
+	 * Default constructor
+	 */
 	public Util() {
 
 	}
@@ -28,6 +32,21 @@ public class Util {
 			}
 		}
 		return false;
+	}
+
+	public static boolean isAnnotatedTest(MethodDeclaration n) {
+		boolean valid = false;
+
+		if (!n.getAnnotationByName("Ignore").isPresent()) {
+
+			if (n.getAnnotationByName("Test").isPresent()) {
+				// must be a public method
+				if (n.getModifiers().contains(Modifier.publicModifier())) {
+					valid = true;
+				}
+			}
+		}
+		return valid;
 	}
 
 	public static boolean isValidTestMethod(MethodDeclaration n) {
@@ -55,13 +74,11 @@ public class Util {
 	}
 
 	public static ArrayList<String> getAllJavaClasses() {
-		ArrayList<String> javaClasses = new ArrayList<String>();
+		ArrayList<String> javaClasses = new ArrayList<>();
 
 		InputStream fstream = Util.class.getResourceAsStream("/java_classes.txt");
 
 		if (fstream != null) {
-
-//			System.out.println("CAME HERE");
 
 			InputStreamReader inputStreamReader = new InputStreamReader(fstream);
 			BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
@@ -72,7 +89,6 @@ public class Util {
 					javaClasses.add(line);
 				}
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 
@@ -80,7 +96,6 @@ public class Util {
 			try {
 				bufferedReader.close();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 
@@ -93,29 +108,27 @@ public class Util {
 		return test.toLowerCase().replace("test", "");
 	}
 
-//	public static String getTestFileName(String testFile) {
-//		int lastIndex = testFile.lastIndexOf(".");
-//		return testFile.substring(lastIndex + 1, testFile.length());
-//	}
-//
-//	public static String getTestFileNameWithoutExtension(String testFile) {
-//		int lastIndex = getTestFileName(testFile).lastIndexOf(".");
-//		return getTestFileName(testFile).substring(0, lastIndex);
-//	}
-//	
 
 	public static String getTestFileName(String testFile) {
 		int lastIndex = testFile.lastIndexOf(".");
-
 		return testFile.substring(lastIndex + 1);
-
-//		var filename = url.substring(url.lastIndexOf('/')+1);
-//		String[] stringArray = testFile.split(".");
 
 	}
 
+	public static String getGitName(String name) {
+		int lastIndex = name.lastIndexOf("/");
+		return name.substring(lastIndex + 1);
+
+	}
+
+	public static String getClassName(String file) {
+		int first = file.lastIndexOf("\\");
+		int dot = file.substring(first + 1).lastIndexOf(".");
+		return file.substring(first + 1).substring(0, dot);
+	}
+
 	public static <T> List<T> intersection(List<T> list1, List<T> list2) {
-		List<T> list = new ArrayList<T>();
+		List<T> list = new ArrayList<>();
 
 		for (T t : list1) {
 			if (list2.contains(t)) {
@@ -127,18 +140,22 @@ public class Util {
 		return list;
 	}
 
-	public static <T> void genericPrint(Set<T> container) {
-		for (T item : container) {
-			System.out.println(item);
-		}
-	}
-
 	public static <T> void genericPrintMap(Map<T, Set<T>> container) {
 		for (Map.Entry<T, Set<T>> entry : container.entrySet()) {
 			String key = (String) entry.getKey();
 			Object value = entry.getValue();
 			System.out.println("KEY: " + key + " / " + value);
 		}
+	}
+
+	public static boolean checkIfCloned(File gitPath, String project) {
+		boolean value = false;
+		for (int i = 0; i < gitPath.list().length; i++) {
+			if (gitPath.list()[i].equals(project)) {
+				value = true;
+			}
+		}
+		return value;
 	}
 
 	public static boolean isStringUpperCase(String str) {
@@ -183,9 +200,60 @@ public class Util {
 		}
 	}
 
+	public static List<String> getFlakyFiles(String sDir, String testFile) throws IOException {
+
+		// TODO Use endsWith instead of matches.
+//		add this instead .endsWith(".*\\" + testFile+".java"))
+		ArrayList<String> files = new ArrayList<>();
+		Files.find(Paths.get(sDir), 999,
+				(p, bfa) -> bfa.isRegularFile() && p.getFileName().toString().matches(".*\\.java")).forEach(f -> {
+					if (Util.getClassName(f.toString()).equals(testFile)) {
+						files.add(f.toString());
+					}
+				});
+
+		return files;
+
+	}
+
+	public static List<String> getFlakyFiles2(String sDir, String testFile) throws IOException {
+
+		// TODO Use endsWith instead of matches.
+//		add this instead .endsWith(".*\\" + testFile+".java"))
+		ArrayList<String> files = new ArrayList<>();
+		Files.find(Paths.get(sDir), 999,
+				(p, bfa) -> bfa.isRegularFile() && p.getFileName().toString().endsWith(".*\\" + testFile + ".java"))
+				.forEach(f -> {
+					if (Util.getClassName(f.toString()).equals(testFile)) {
+						files.add(f.toString());
+					}
+				});
+
+		return files;
+
+	}
+
+	public static String getFlakyFile(String sDir, String testFile) throws IOException {
+
+		ArrayList<String> files = new ArrayList<>();
+
+		Files.find(Paths.get(sDir), 999,
+				(p, bfa) -> bfa.isRegularFile() && p.getFileName().toString().matches(".*\\.java"))
+				.forEach(f -> files.add(f.toString()));
+
+		String output = null;
+		for (String file : files) {
+
+			if ((Util.getClassName(file).equals(testFile))) {
+				output = file;
+			}
+		}
+		return output;
+	}
+
 	public static ArrayList<String> getAllFiles(String sDir) throws IOException {
 
-		ArrayList<String> files = new ArrayList<String>();
+		ArrayList<String> files = new ArrayList<>();
 		Files.find(Paths.get(sDir), 999,
 				(p, bfa) -> bfa.isRegularFile() && p.getFileName().toString().matches(".*\\.java"))
 				.forEach(f -> files.add(f.toString()));
@@ -194,51 +262,13 @@ public class Util {
 
 	public static ArrayList<String> getAllTestFiles(String sDir) throws IOException {
 
-		ArrayList<String> files = new ArrayList<String>();
-		Files.find(Paths.get(sDir), 999,
-//				(p, bfa) -> bfa.isRegularFile() && p.getFileName().toString().matches(".*(test|testing).*\\.java"))
-				(p, bfa) -> bfa.isRegularFile() && p.getFileName().toString().matches(".*\\.java"))
-				.forEach(f -> files.add(f.toString()));
-		ArrayList<String> new_files = new ArrayList<String>();
-
-		for (String file : files) {
-			if (file.matches(".*(test|testing).*\\.java")) {
-				new_files.add(file);
+		ArrayList<String> files = new ArrayList<>();
+		Files.find(Paths.get(sDir), Integer.MAX_VALUE, (p, bfa) -> bfa.isRegularFile()).forEach(f -> {
+			if (f.toString().matches(".*Test.java")) {
+				files.add(f.toString());
 			}
-		}
+		});
 
-		return new_files;
-	}
-
-	public static void evaluate(int positive, double tp) {
-
-		int allTest = 19532;
-		int flaky = 8829;
-		int total_negatives = allTest - flaky;
-
-		int negative = allTest - positive;
-		double fp = positive - tp;
-		double tn = total_negatives - fp;
-		double fn = negative - tn;
-
-		double precision = tp / (fp + tp) * 100;
-//		double mm = tp / precision;
-
-		double recall = tp / (tp + fn) * 100;
-
-		double specificity = tn / (tn + fp) * 100;
-
-		double accuracy = (tp + tn) / (tp + fp + tn + fn) * 100;
-
-		System.out.printf("precision \t %.2f %% \n", precision);
-		System.out.printf("recall    \t %.2f %% \n", recall);
-		System.out.printf("specificity \t %.2f %% \n", specificity);
-		System.out.printf("accuracy \t %.2f %% \n", accuracy);
-
-//		System.out.println("tp: " + tp);
-//		System.out.println("fp: " + fp);
-//		System.out.println("tn: " + tn);
-//		System.out.println("fn: " + fn);
-
+		return files;
 	}
 }

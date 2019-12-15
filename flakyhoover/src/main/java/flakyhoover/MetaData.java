@@ -6,7 +6,7 @@ public class MetaData {
 
 	private int line;
 	private String expr;
-	private boolean isFlaky;
+	private boolean isSmelly;
 	private String lineInfo;
 	private List<String> extra;
 	private int line1;
@@ -15,19 +15,19 @@ public class MetaData {
 	private String lineInfo2;
 	private boolean isTestRunWar;
 
-	public MetaData(int line, String expr, String lineInfo, boolean isFlaky) {
+	public MetaData(int line, String expr, String lineInfo, boolean isSmelly) {
 		this.setLine(line);
 		this.setExpr(expr);
-		this.setFlaky(isFlaky);
+		this.setSmelly(isSmelly);
 		this.setLineInfo(lineInfo);
 	}
 
-	public MetaData(int line1, int line2, String lineInfo1, String lineInfo2, boolean isFlaky) {
+	public MetaData(int line1, int line2, String lineInfo1, String lineInfo2, boolean isSmelly) {
 		this.setLine1(line1);
 		this.setLine2(line2);
 		this.setLineInfo1(lineInfo1);
 		this.setLineInfo2(lineInfo2);
-		this.isFlaky = isFlaky;
+		this.isSmelly = isSmelly;
 	}
 
 	public void setIsTestRunWar(boolean value) {
@@ -46,12 +46,12 @@ public class MetaData {
 		return this.extra;
 	}
 
-	public boolean getIsFlaky() {
-		return isFlaky;
+	public boolean getIsSmelly() {
+		return isSmelly;
 	}
 
-	public void setFlaky(boolean isFlaky) {
-		this.isFlaky = isFlaky;
+	public void setSmelly(boolean isSmelly) {
+		this.isSmelly = isSmelly;
 	}
 
 	public String getExpr() {

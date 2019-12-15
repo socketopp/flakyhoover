@@ -22,7 +22,7 @@ import flakyhoover.IntelMethod;
 
 public class ASTHelper {
 
-	private static List<String> exceptions = new ArrayList<String>(
+	private static List<String> exceptions = new ArrayList<>(
 			Arrays.asList("Boolean", "Byte", "Short", "Character", "toString", "Integer", "Long", "Float", "Double",
 					"LOG", "log", "", "Collections", "Math", "assert", "assertEquals", "assertTrue", "assertFalse",
 					"assertNotNull", "assertNull", "assertSame", "assertNotSame", "assertArrayEquals", "fail"));
@@ -31,7 +31,6 @@ public class ASTHelper {
 		for (Expression expr : n.getArguments()) {
 			String type = expr.getClass().getSimpleName();
 			String value = expr.toString();
-			System.out.println("value: " + value);
 			if (type.equals("MethodCallExpr")) {
 				String[] array = value.split("\\.");
 				if (array.length > 1) {
@@ -49,13 +48,13 @@ public class ASTHelper {
 
 	public static boolean analyzeTestRunWar(Set<String> classVariables, Map<String, Set<String>> methodCalls,
 			String currentMethod) {
-		boolean isFlaky = false;
+		boolean isSmelly = false;
 		for (String variable : classVariables) {
 			for (Map.Entry<String, Set<String>> method1 : methodCalls.entrySet()) {
 				for (Map.Entry<String, Set<String>> method2 : methodCalls.entrySet()) {
 					if (currentMethod.equals(method1.getKey()) && !method1.getKey().equals(method2.getKey())) {
 						if (method1.getValue().contains(variable) && method2.getValue().contains(variable)) {
-							isFlaky = true;
+							isSmelly = true;
 							break;
 						}
 
@@ -63,32 +62,32 @@ public class ASTHelper {
 				}
 			}
 		}
-		return isFlaky;
+		return isSmelly;
 	}
 
 	public static boolean analyzeTestRunWarStatic(Set<String> classVariables, Map<String, Set<String>> methodCalls,
 			String currentMethod) {
-		boolean isFlaky = false;
+		boolean isSmelly = false;
 		for (Map.Entry<String, Set<String>> method1 : methodCalls.entrySet()) {
 			for (Map.Entry<String, Set<String>> method2 : methodCalls.entrySet()) {
 				if (currentMethod.equals(method1.getKey()) && !method1.getKey().equals(method2.getKey())) {
 					for (String value : method1.getValue()) {
 						if (method2.getValue().contains(value)) {
-							isFlaky = true;
+							isSmelly = true;
 							break;
 						}
 					}
 				}
 			}
 		}
-		return isFlaky;
+		return isSmelly;
 	}
 
 	public static String getSimpleNameRec(ArrayList<Node> nodes) {
 		String returnString = "";
 		if (nodes.size() > 0) {
 			Node node = nodes.get(0);
-			if (node.getClass().getSimpleName().toString().equals("VariableDeclarator")) {
+			if (node.getClass().getSimpleName().equals("VariableDeclarator")) {
 				String type = node.getChildNodes().get(0).getClass().getSimpleName();
 				String value = node.getChildNodes().get(0).toString();
 				if (type.equals("ClassOrInterfaceType") && !value.equals("String")) {
@@ -108,15 +107,12 @@ public class ASTHelper {
 		Matcher m = Pattern.compile("(?<=\\[).+?(?=\\])").matcher(n.getScope().toString());
 		String base = "empty";
 
-		if (m.find()) {
+		if (m.find() && !exceptions.contains(m.group())) {
+			base = m.group();
+			if (base.contains(".")) {
+				String[] arrOfbase = base.split("\\.");
+				base = arrOfbase[0];
 
-			if (!exceptions.contains(m.group())) {
-
-				base = m.group();
-				if (base.contains(".")) {
-					String[] arrOfbase = base.split("\\.");
-					base = arrOfbase[0];
-				}
 			}
 		}
 		return base;
@@ -166,34 +162,37 @@ public class ASTHelper {
 
 	public static boolean checkIfEqMethodOrClass(String type, String className, String methodName) {
 
-		return !type.toLowerCase().equals(className.toLowerCase())
-				|| !type.toLowerCase().equals(className.toLowerCase())
-						&& type.toLowerCase().equals(methodName.toLowerCase());
+		boolean equalToMethod = type.toLowerCase().equals(Util.removeTest(methodName.toLowerCase()));
+		boolean equalToClass = type.toLowerCase().equals(className.toLowerCase());
+
+		return !equalToMethod && !equalToClass;
+
+//		return !type.toLowerCase().equals(className.toLowerCase())
+//				|| !type.toLowerCase().equals(className.toLowerCase())
+//						&& type.toLowerCase().equals(methodName.toLowerCase());
 
 	}
 
-	public static void setMethodStatusFlaky(MethodDeclaration currentMethod, Set<IntelMethod> allMethodsData,
+	public static void setMethodStatusSmelly(MethodDeclaration currentMethod, Set<IntelMethod> allMethodsData,
 			boolean value) {
 		for (IntelMethod m : allMethodsData) {
 			if (m.getName().equals(currentMethod.getNameAsString())) {
-				m.setFlaky(value);
+				m.setSmelly(value);
 				break;
 			}
 		}
 	}
 
-	public static boolean checkIfFlaky(String currentMethod, Set<IntelMethod> allMethodsData) {
-		boolean flaky = false;
+	public static boolean checkIfSmelly(String currentMethod, Set<IntelMethod> allMethodsData) {
+		boolean smelly = false;
 		for (IntelMethod m : allMethodsData) {
-			if (m.getName().equals(currentMethod)) {
-				if (m.isFlaky()) {
-					flaky = m.isFlaky();
-					break;
-				}
+			if (m.getName().equals(currentMethod) && m.isSmelly()) {
+				smelly = m.isSmelly();
+				break;
 
 			}
 		}
-		return flaky;
+		return smelly;
 	}
 
 	public static IntelMethod getMethod(String currentMethod, Set<IntelMethod> allMethodsData) {
@@ -229,21 +228,14 @@ public class ASTHelper {
 		for (VariableDeclarator variableDeclarator : n.getVariables()) {
 
 			String name = variableDeclarator.getNameAsString();
-			String type = variableDeclarator.getType().getClass().getSimpleName();
-			String class_type = variableDeclarator.getTypeAsString();
-
-//			if (type.equals("ClassOrInterfaceType") && !class_type.equals("String")) {
 			variabelsDeclarations.add(name);
-//			}
 		}
 	}
 
 	public static void addParams(MethodDeclaration n, Set<String> methodVariables) {
 		if (n.getParameters().size() > 0) {
 			for (Parameter param : n.getParameters()) {
-				System.out.println("PARAM: " + param);
 				if (param.getTypeAsString().equals("File") || param.getTypeAsString().equals("Path")) {
-					System.out.println("PARAM2: " + param.getNameAsString());
 
 					methodVariables.add(param.getNameAsString());
 				}
@@ -269,53 +261,17 @@ public class ASTHelper {
 		if (n.getParameters().size() > 0) {
 			for (Parameter param : n.getParameters()) {
 
-				System.out.println("PARAM1: " + param);
-
 				String parameter = getParameter(param);
-				System.out.println("PARAM2: " + parameter);
 
 				if (!parameter.equals("")) {
 					variabelsDeclarations.add(parameter);
 				}
 
 				String name = param.getNameAsString();
-				String type = param.getType().getClass().getSimpleName();
-				String class_type = param.getTypeAsString();
-//				if (type.equals("ClassOrInterfaceType") && !class_type.equals("String")) {
 				variabelsDeclarations.add(name);
-//				}
 			}
 		}
 
 	}
 
 }
-
-//Old solution to get all object declaration except primitives and strings 
-//String variable = ASTHelper.getSimpleNameRec(new ArrayList<Node>(n.getChildNodes()));
-//if (!variable.equals("")) {
-//	varDeclExprArray.add(variable);
-//}
-
-// Old solution to get all class objects except primitives and strings 
-//String simpleName = ASTHelper.getSimpleNameRec(new ArrayList<Node>(n.getChildNodes()));
-//if (!simpleName.equals("")) {
-//	classVariables.add(simpleName);
-//}
-
-//public String tranverseVariableDeclarator(ArrayList<Node> nodes) {
-//String returnString = "";
-//
-//if (nodes.size() > 0) {
-//	Node node = nodes.get(0);
-//
-//	if (node.getClass().getSimpleName().toString().equals("VariableDeclarator")) {
-//		// (node.getChildNodes().get(1).toString()
-//		varDeclExprList.add(new VariableData(node.getBegin().get().line, node.toString(),
-//				node.getChildNodes().get(1).toString(), currentMethod));
-//	} else {
-//		nodes.remove(0);
-//		tranverseVariableDeclarator(nodes, varDeclExprList, currentMethod);
-//	}
-//}
-//}

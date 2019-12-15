@@ -5,9 +5,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
@@ -17,10 +19,11 @@ import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
+import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 
-import flakyhoover.AbstractFlaky;
-import flakyhoover.AbstractFlakyElement;
+import flakyhoover.AbstractSmell;
+import flakyhoover.AbstractSmellElement;
 import flakyhoover.IntelMethod;
 import flakyhoover.Main;
 import flakyhoover.TestMethod;
@@ -28,9 +31,9 @@ import util.ASTHelper;
 import util.TestSmell;
 import util.Util;
 
-public class IndirectTesting extends AbstractFlaky {
+public class IndirectTesting extends AbstractSmell {
 
-	private List<AbstractFlakyElement> flakyElementList;
+	private List<AbstractSmellElement> smellyElementList;
 	private String fileName;
 	private String projectName;
 	private ArrayList<TestSmell> testSmells;
@@ -40,28 +43,28 @@ public class IndirectTesting extends AbstractFlaky {
 	}
 
 	public IndirectTesting() {
-		flakyElementList = new ArrayList<>();
+		smellyElementList = new ArrayList<>();
 	}
 
 	@Override
-	public boolean getHasFlaky() {
-		return flakyElementList.stream().filter(x -> x.getHasFlaky()).count() >= 1;
+	public boolean getHasSmell() {
+		return smellyElementList.stream().filter(x -> x.getHasSmell()).count() >= 1;
 	}
 
 	@Override
-	public String getFlakyName() {
+	public String getSmellName() {
 		return "IndirectTesting";
 	}
 
 	@Override
-	public List<AbstractFlakyElement> getFlakyElements() {
-		return flakyElementList;
+	public List<AbstractSmellElement> getSmellyElements() {
+		return smellyElementList;
 	}
 
 	@Override
 	public void runAnalysis(CompilationUnit testFileCompilationUnit, CompilationUnit productionFileCompilationUnit,
 			String testClassName, String projectName) throws FileNotFoundException {
-		testSmells = new ArrayList<TestSmell>();
+		testSmells = new ArrayList<>();
 		this.fileName = testClassName;
 		this.projectName = projectName;
 
@@ -78,50 +81,53 @@ public class IndirectTesting extends AbstractFlaky {
 
 	private class ClassVisitor extends VoidVisitorAdapter<Void> {
 		private MethodDeclaration currentMethod = null;
-		private boolean hasFlaky = false;
+		private MethodDeclaration prevMethod = null;
+
+		private boolean hasSmell = false;
 		private boolean isTestClass = false;
 
 		private TestSmell testSmell = new TestSmell();
 		private ArrayList<String> jClasses = Util.getAllJavaClasses();
-		private List<String> exceptions = new ArrayList<String>(
+		private List<String> exceptions = new ArrayList<>(
 				Arrays.asList("Boolean", "Byte", "Short", "Character", "toString", "Integer", "Long", "Float", "Double",
 						"TestRunner", "", "Collections", "Math", "assert", "assertEquals", "assertTrue", "assertFalse",
 						"assertNotNull", "assertNull", "assertSame", "assertNotSame", "assertArrayEquals", "fail"));
 
 		private TestMethod testMethod;
-		private Set<String> indirectClasses = new HashSet<String>();
+		private Set<String> indirectClasses = new HashSet<>();
 		private Set<String> classVariables = new HashSet<>();
-		private Set<IntelMethod> allMethodsData = new HashSet<IntelMethod>();
-		private Set<String> allClassMethods = new HashSet<String>();
+		private Set<IntelMethod> allMethodsData = new HashSet<>();
+		private Set<String> allClassMethods = new HashSet<>();
 
 		private String flakinessType = "test-order-dependency";
 		private String state;
 		private String className;
 		private String methodName;
 		private int scope = 0;
-		private MethodDeclaration[] scopes = new MethodDeclaration[1000];
-		String parentType = null;
+		private String parentType = null;
+		private String classNameTest = null;
+		private String parentClass = null;
 
-		private void initTestSmells(MethodDeclaration n) {
-
+		private void initTestSmells(String methodName) {
 			testSmell.setFlakinessType(flakinessType);
 			testSmell.setProject(projectName);
-			testSmell.setTestMethod(n.getNameAsString());
-			testSmell.setSmellType(getFlakyName());
+			testSmell.setTestMethod(methodName);
+			testSmell.setSmellType(getSmellName());
 			testSmell.setTestClass(fileName);
+			testSmell.setSmelly(false);
+
 		}
 
 		public void setState(String state) {
 			this.state = state;
 		}
 
-		// TODO
-		// Must check class if they exist in project structure,
 		@Override
 		public void visit(ClassOrInterfaceDeclaration n, Void arg) {
 			if (!isTestClass) {
 				isTestClass = Util.isValidTestClass(n);
 				className = Util.removeTest(n.getNameAsString());
+				classNameTest = n.getNameAsString();
 			}
 			super.visit(n, arg);
 		}
@@ -130,70 +136,94 @@ public class IndirectTesting extends AbstractFlaky {
 		public void visit(MethodDeclaration n, Void arg) {
 
 			if (isTestClass) {
-				parentType = n.getParentNode().get().getClass().getSimpleName();
-				scope++;
-				scopes[scope] = n;
+
+				Optional<Node> optNodeParentType = n.getParentNode();
+				if (optNodeParentType.isPresent()) {
+					parentType = optNodeParentType.get().getClass().getSimpleName();
+				}
+
+				Optional<ClassOrInterfaceDeclaration> optNodeParentClass = n
+						.findAncestor(ClassOrInterfaceDeclaration.class);
+				if (optNodeParentClass.isPresent()) {
+					parentClass = optNodeParentClass.get().getNameAsString();
+				}
 
 				switch (state) {
 				case "analyze": {
-					currentMethod = n;
-					ASTHelper.addIndirectParams(n, this.indirectClasses, jClasses, className); // Check if necessary
-					if (parentType.equals("ClassOrInterfaceDeclaration")) {
-						methodName = Util.removeTest(n.getNameAsString());
-						this.allMethodsData.add(new IntelMethod(n.getNameAsString(), false));
-						this.allClassMethods.add(n.getNameAsString());
-						initTestSmells(n);
-						testMethod = new TestMethod(n.getNameAsString(), n.getBegin().get().line);
-						testMethod.setHasFlaky(false); // default value is false (i.e. no smell)
-					}
+					scope++;
+					// We check each methods parentType in order to determine which methods are test
+					// methods and which are methods inside methods and inside new classes.
+					// We are only interested in top level methods, that way we check that it's
+					// parentClass is equal to the current test class.
+					if (parentType.equals("ClassOrInterfaceDeclaration") && parentClass.equals(classNameTest)) {
+						String testName = n.getNameAsString();
 
+						currentMethod = n;
+						methodName = Util.removeTest(testName);
+						this.allMethodsData.add(new IntelMethod(testName, false));
+						this.allClassMethods.add(testName);
+						ASTHelper.addIndirectParams(n, this.indirectClasses, jClasses, className);
+						initTestSmells(testName);
+						testMethod = new TestMethod(testName, n.getBegin().get().line);
+						testMethod.setHasSmell(false); // default value is false (i.e. no smell)
+					}
+					break;
+
+				}
+				default:
 					break;
 				}
-				}
 
-				super.visit(n, arg);
+			}
 
-				switch (state) {
-				case "analyze": {
-					scope--;
-					testMethod.setHasFlaky(hasFlaky);
+			super.visit(n, arg);
 
-					if (hasFlaky && scope == 0) {
-						currentMethod = scopes[1];
-						testSmells.add(testSmell);
-						flakyElementList.add(testMethod);
-						ASTHelper.setMethodStatusFlaky(n, allMethodsData, true);
-					}
+			switch (state) {
+			case "analyze": {
+				scope--;
+				if (currentMethod != null) {
+					parentType = currentMethod.getParentNode().get().getClass().getSimpleName();
+					parentClass = currentMethod.findAncestor(ClassOrInterfaceDeclaration.class).get().getNameAsString();
 
-					if (parentType.equals("ClassOrInterfaceDeclaration") || scope == 0) {
-						testSmell = new TestSmell();
+					if (parentType.equals("ClassOrInterfaceDeclaration") && scope == 0) {
+						if (hasSmell) {
+							testSmell.setSmelly(true);
+							testSmells.add(testSmell);
+							smellyElementList.add(testMethod);
+							testMethod.setHasSmell(hasSmell);
+							ASTHelper.setMethodStatusSmelly(n, allMethodsData, true);
+							testSmell = new TestSmell();
+						}
+
 						currentMethod = null;
-						hasFlaky = false;
+						indirectClasses = new HashSet<>();
+						hasSmell = false;
 					}
-					break;
 				}
 
-				case "analyzeRelationState": {
-					initTestSmells(n);
-					testMethod = new TestMethod(n.getNameAsString(), n.getBegin().get().line);
-					testMethod.setHasFlaky(false);
-					hasFlaky = analyzeRelations(n);
-					if (hasFlaky) {
-						testMethod.setHasFlaky(true);
-						testSmells.add(testSmell);
-						flakyElementList.add(testMethod);
-					}
+				break;
+			}
 
-					if (parentType.equals("ClassOrInterfaceDeclaration")) {
-						hasFlaky = false;
-						testSmell = new TestSmell();
-						testMethod.addDataItem("ResourceOptimismCount", "0");
-					}
-
-					break;
-
+			case "analyzeRelationState": {
+				String key = n.getNameAsString();
+				initTestSmells(key);
+				testMethod = new TestMethod(n.getNameAsString(), n.getBegin().get().line);
+				testMethod.setHasSmell(false);
+				hasSmell = analyzeRelations(n);
+				if (hasSmell) {
+					testMethod.setHasSmell(true);
+					testSmell.setSmelly(true);
+					testSmells.add(testSmell);
+					smellyElementList.add(testMethod);
 				}
-				}
+				hasSmell = false;
+				testSmell = new TestSmell();
+				testMethod.addDataItem("IndirectTestingCount", "0");
+				break;
+
+			}
+			default:
+				break;
 			}
 		}
 
@@ -202,16 +232,15 @@ public class IndirectTesting extends AbstractFlaky {
 			if (currentMethod == null && state.equals("analyze")) {
 
 				for (VariableDeclarator variableDeclarator : n.getVariables()) {
+
 					String type = variableDeclarator.getTypeAsString();
 					String name = variableDeclarator.getNameAsString();
 
 					// Not sure, but check if it is referenced in that case we class it as smelly???
-					if (!jClasses.contains(type) && ASTHelper.checkIfEqMethodOrClass(type, className, methodName)
-							|| Main.getAllProductionFiles().contains(className)) {
-						indirectClasses.add(name);
+					boolean equalToClass = type.toLowerCase().equals(className.toLowerCase());
+					if (!jClasses.contains(type) && !equalToClass || Main.getAllProductionFiles().contains(className)) {
 						// Since it is a class member and indirectClass object used in testmethod
 						classVariables.add(name);
-
 					}
 				}
 			}
@@ -220,20 +249,29 @@ public class IndirectTesting extends AbstractFlaky {
 
 		@Override
 		public void visit(VariableDeclarator n, Void arg) {
-			if (currentMethod == null) {
-				currentMethod = scopes[scope];
-			}
+
 			if (currentMethod != null && state.equals("analyze")) {
 
-				String type = n.getTypeAsString();
-				String name = n.getNameAsString();
-				type = type.replace("[]", "");
-				if (!jClasses.contains(type)) {
-					// TODO add checkifEq in this file
-					if (ASTHelper.checkIfEqMethodOrClass(type, className, methodName)) {
+				List<ClassOrInterfaceType> found = n.findAll(ClassOrInterfaceType.class);
+				// Look for nested classobjects inside lists: List<ClassObject>
+				if (found.size() > 0) {
+					for (ClassOrInterfaceType c : found) {
+						String object = c.getNameAsString();
+						object = object.replace("[]", "");
+						if (!jClasses.contains(object) && ASTHelper.checkIfEqMethodOrClass(object, className,
+								currentMethod.getNameAsString())) {
+							hasSmell = true;
+						}
+					}
+				} else {
+					// In case if it is not
+					String type = n.getTypeAsString();
+					String name = n.getNameAsString();
+					type = type.replace("[]", "");
+					if (!jClasses.contains(type)
+							&& ASTHelper.checkIfEqMethodOrClass(type, className, currentMethod.getNameAsString())) {
+						hasSmell = true;
 						indirectClasses.add(name);
-
-						hasFlaky = true;
 					}
 				}
 			}
@@ -243,18 +281,16 @@ public class IndirectTesting extends AbstractFlaky {
 		@Override
 		public void visit(MethodCallExpr n, Void arg) {
 
-			if (currentMethod == null) {
-				currentMethod = scopes[scope];
-			}
-
 			if (currentMethod != null && state.equals("analyze")) {
+
 				if (n.getScope().isPresent()) {
 
 					// Go through parameters
 					if (n.getArguments().size() > 0) {
+
 						for (Expression expr : n.getArguments()) {
 							if (indirectClasses.contains(expr.toString())) {
-								this.hasFlaky = true;
+								this.hasSmell = true;
 							}
 						}
 					}
@@ -266,28 +302,38 @@ public class IndirectTesting extends AbstractFlaky {
 					if (n.getScope().get() instanceof ClassExpr) {
 						ClassExpr expr = ((ClassExpr) n.getScope().get());
 						String classExpr = expr.getTypeAsString();
-						if (!jClasses.contains(classExpr) && !classExpr.equals(className)
-								&& !classExpr.toLowerCase().equals(methodName)
+						if (!jClasses.contains(classExpr) && !classExpr.equals(className.toLowerCase())
+								&& !classExpr.toLowerCase().equals(Util.removeTest(methodName).toLowerCase())
 								|| Main.getAllProductionFiles().contains(className)) {
-							this.hasFlaky = true;
+
+							this.hasSmell = true;
 						}
 					}
 
-					else if (n.getScope().get() instanceof NameExpr) { // && n.findAncestor(VariableDeclarator.class) ==
-																		// null) {
+					// Checkfor all object calls "object.call()"
+					else if (n.getScope().get() instanceof NameExpr) {
 
-						NameExpr nameExpr = ((NameExpr) n.getScope().get());
-						// Check for static class references such as = new
-						// Subcollection(NutchConfiguration.create());
+						// && n.findAncestor(VariableDeclarator.class) ==null) {
 
-						if ((indirectClasses.contains(nameExpr.toString()) && !exceptions.contains(nameExpr.toString()))
-								|| (Character.isUpperCase(nameExpr.toString().charAt(0))
-										&& !jClasses.contains(nameExpr.toString())
-										&& !exceptions.contains(nameExpr.toString())
-										&& !nameExpr.toString().toLowerCase().equals(className.toLowerCase()))) {
+						String nameExpr = ((NameExpr) n.getScope().get()).toString();
 
-							this.hasFlaky = true;
+						if (Character.isUpperCase(nameExpr.charAt(0)) && !jClasses.contains(nameExpr)
+								&& !exceptions.contains(nameExpr)) {
+
+							if (ASTHelper.checkIfEqMethodOrClass(nameExpr, className, methodName)) {
+								if (!nameExpr.toLowerCase().contains("factory")) {
+									this.hasSmell = true;
+								}
+
+							}
+
+						} else if (indirectClasses.contains(nameExpr) && !exceptions.contains(nameExpr)
+								&& !jClasses.contains(nameExpr) && !Character.isUpperCase(nameExpr.charAt(0))) {
+
+							this.hasSmell = true;
+
 						}
+
 					}
 
 				} else {
@@ -296,20 +342,27 @@ public class IndirectTesting extends AbstractFlaky {
 					if (n.getArguments().size() > 0) {
 
 						for (Expression expr : n.getArguments()) {
-							if (indirectClasses.contains(expr.toString()) && !exceptions.contains(expr.toString())) {
-								this.hasFlaky = true;
+
+							if (indirectClasses.contains(expr.toString()) && !exceptions.contains(expr.toString())
+									|| classVariables.contains(expr.toString())
+											&& !exceptions.contains(expr.toString())) {
+
+								this.hasSmell = true;
 
 							}
 						}
 					}
 					String base = ASTHelper.checkIfClassMember(n);
 					if (base.equals("empty") && parentType.equals("ClassOrInterfaceDeclaration")) {
+
 						IntelMethod methodData = ASTHelper.getMethod(currentMethod.getNameAsString(),
 								this.allMethodsData);
-						if (!n.getNameAsString().equals(currentMethod.getNameAsString())
+
+						if (methodData != null && !n.getNameAsString().equals(currentMethod.getNameAsString())
 								&& !exceptions.contains(n.getNameAsString())) {
 							methodData.addMethod(n.getNameAsString());
 						}
+
 					}
 				}
 			}
@@ -320,11 +373,17 @@ public class IndirectTesting extends AbstractFlaky {
 		@Override
 		public void visit(ObjectCreationExpr n, Void arg) {
 			if (currentMethod != null && state.equals("analyze")) {
+				if (prevMethod != null) {
+					currentMethod = prevMethod;
+				}
 
 				String type = n.getTypeAsString();
-				if (!jClasses.contains(type) && ASTHelper.checkIfEqMethodOrClass(type, className, methodName)
+
+				if (!jClasses.contains(type)
+						&& ASTHelper.checkIfEqMethodOrClass(type, className, currentMethod.getNameAsString())
 						|| Main.getAllProductionFiles().contains(className)) {
-					hasFlaky = true;
+
+					hasSmell = true;
 
 				}
 
@@ -336,19 +395,17 @@ public class IndirectTesting extends AbstractFlaky {
 		public boolean analyzeRelations(MethodDeclaration n) {
 
 			for (String method : allClassMethods) {
-				if (method.equals(n.getNameAsString())) {
-					if (!ASTHelper.checkIfFlaky(method, allMethodsData)) {
-						IntelMethod intelMethod = ASTHelper.getMethod(method, allMethodsData);
-						if (!intelMethod.isFlaky()) {
-							for (String call : intelMethod.getMethods()) {
-								if (ASTHelper.checkIfFlaky(call, allMethodsData)) {
-
-									return true;
-								}
+				if (method.equals(n.getNameAsString()) && !ASTHelper.checkIfSmelly(method, allMethodsData)) {
+					IntelMethod intelMethod = ASTHelper.getMethod(method, allMethodsData);
+					if (intelMethod != null && !intelMethod.isSmelly()) {
+						for (String call : intelMethod.getMethods()) {
+							if (ASTHelper.checkIfSmelly(call, allMethodsData)) {
+								return true;
 							}
 						}
 					}
 				}
+
 			}
 			return false;
 		}

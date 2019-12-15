@@ -4,8 +4,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TestFile {
-	private String app, testFilePath, productionFilePath;
-	private List<AbstractFlaky> flakyInst;
+	private String app, testFilePath, productionFilePath, testMethod;
+	private List<AbstractSmell> smellyInst;
+
+	public TestFile(String app, String testFilePath, String productionFilePath) {
+		this.app = app;
+		this.testFilePath = testFilePath;
+		this.productionFilePath = productionFilePath;
+		this.smellyInst = new ArrayList<>();
+	}
 
 	public String getApp() {
 		return app;
@@ -13,25 +20,24 @@ public class TestFile {
 
 	public void printResult() {
 		System.out.println("\n");
-//		System.out.println("PrintRes: " +  getFlakyInst().size());
 
-		for (AbstractFlaky flaky : getFlakyInst()) {
-			if (flaky.getHasFlaky()) {
+		for (AbstractSmell smell : getSmellyInst()) {
+			if (smell.getHasSmell()) {
 				System.out.println("File: " + getTestFileName());
-				System.out.println("Has flaky :" + flaky.getHasFlaky());
-				System.out.println("FlakyName: " + flaky.getFlakyName());
-				System.out.println("FlakyClass: " + flaky.getClass());
+				System.out.println("Has smell :" + smell.getHasSmell());
+				System.out.println("FlakyName: " + smell.getSmellName());
+				System.out.println("FlakyClass: " + smell.getClass());
 
 			}
 
-			System.out.println("flaky.getFlakyElements().size(): " + flaky.getFlakyElements().size());
-			if (flaky.getFlakyElements().size() >= 1) {
-				for (AbstractFlakyElement element : flaky.getFlakyElements()) {
+			System.out.println("smell.getFlakyElements().size(): " + smell.getSmellyElements().size());
+			if (smell.getSmellyElements().size() >= 1) {
+				for (AbstractSmellElement element : smell.getSmellyElements()) {
 					System.out.println("");
 
 					System.out.println("Method: " + element.getMethodName());
 					System.out.println("Line: " + element.getLine());
-					System.out.println("HasFlaky: " + element.getHasFlaky());
+					System.out.println("HasFlaky: " + element.getHasSmell());
 					System.out.println("");
 					if (!element.getMetaData().isEmpty()) {
 						List<MetaData> list = element.getMetaData().get("VariableCond");
@@ -39,13 +45,13 @@ public class TestFile {
 
 						for (MetaData d : list) {
 							if (d.getIsTestRunWar()) {
-								System.out.println("ISFLAKY: " + d.getIsFlaky());
+								System.out.println("ISFLAKY: " + d.getIsSmelly());
 								System.out.println("");
 								System.out.println("getLine1: " + d.getLine1());
 								System.out.println("getLine2: " + d.getLine2());
 								System.out.println("getLineInfo1: " + d.getLineInfo1());
 								System.out.println("getLineInfo2: " + d.getLineInfo2());
-							} else if (d.getIsFlaky()) {
+							} else if (d.getIsSmelly()) {
 //								System.out.println("");
 //								System.out.println(d.getExpr());
 //								System.out.println(d.getLine());
@@ -80,23 +86,20 @@ public class TestFile {
 		return testFilePath;
 	}
 
-	public List<AbstractFlaky> getFlakyInst() {
-		return flakyInst;
+	public String getTestMethodName() {
+		return this.testMethod;
+	}
+
+	public List<AbstractSmell> getSmellyInst() {
+		return smellyInst;
 	}
 
 	public boolean getHasProductionFile() {
 		return ((productionFilePath != null && !productionFilePath.isEmpty()));
 	}
 
-	public TestFile(String app, String testFilePath, String productionFilePath) {
-		this.app = app;
-		this.testFilePath = testFilePath;
-		this.productionFilePath = productionFilePath;
-		this.flakyInst = new ArrayList<>();
-	}
-
-	public void addFlakyInst(AbstractFlaky flaky) {
-		flakyInst.add(flaky);
+	public void addSmellyInst(AbstractSmell smell) {
+		smellyInst.add(smell);
 	}
 
 	public String getTagName() {
@@ -108,9 +111,21 @@ public class TestFile {
 		return testFilePath.substring(lastIndex + 1, testFilePath.length());
 	}
 
+	public static String getTestFileName(String testFilePath) {
+		int lastIndex = testFilePath.lastIndexOf("\\");
+		return getProductionFileNameWithoutExtension(testFilePath.substring(lastIndex + 1, testFilePath.length()));
+	}
+
 	public String getTestFileNameWithoutExtension() {
 		int lastIndex = getTestFileName().lastIndexOf(".");
 		return getTestFileName().substring(0, lastIndex);
+	}
+
+	public static String getProductionFileNameWithoutExtension(String path) {
+		int lastIndex = path.lastIndexOf(".");
+		if (lastIndex == -1)
+			return "";
+		return path.substring(0, lastIndex);
 	}
 
 	public String getProductionFileNameWithoutExtension() {

@@ -103,6 +103,7 @@ public class FireAndForgetTest {
 		}
 	}
 
+	// FLAKY
 	@Test
 	public void testServiceTopPartitionsNoArg() throws Exception {
 		BlockingQueue<Map<String, Map<String, CompositeData>>> q = new ArrayBlockingQueue<>(1);
@@ -111,6 +112,26 @@ public class FireAndForgetTest {
 			try {
 				q.put(StorageService.instance.samplePartitions(1000, 100, 10, Lists.newArrayList("READS", "WRITES")));
 				Thread.sleep(2000);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		});
+
+		SystemKeyspace.persistLocalMetadata();
+		Map<String, Map<String, CompositeData>> result = q.poll(11, TimeUnit.SECONDS);
+		List<CompositeData> cd = (List<CompositeData>) (Object) Lists.newArrayList(
+				((TabularDataSupport) result.get("system.local").get("WRITES").get("partitions")).values());
+		assertEquals(1, cd.size());
+	}
+
+	// NOT FLAKY
+	@Test
+	public void notFlakyTestServiceTopPartitionsNoArg() throws Exception {
+		BlockingQueue<Map<String, Map<String, CompositeData>>> q = new ArrayBlockingQueue<>(1);
+		ColumnFamilyStore.all();
+		Executors.newCachedThreadPool().execute(() -> {
+			try {
+				q.put(StorageService.instance.samplePartitions(1000, 100, 10, Lists.newArrayList("READS", "WRITES")));
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -158,8 +179,9 @@ public class FireAndForgetTest {
 		Assert.assertEquals(1, consumption.getVirtualCores());
 	}
 
-	// FLAKY pattern
+	// not FLAKY pattern
 	// SRC: https://martinfowler.com/articles/nonDeterminism.html
+	@Test
 	public void asyncIssue() {
 		int pollingInterval = 3000;
 		makeAsyncCall();

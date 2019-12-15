@@ -2,7 +2,6 @@ package testfiles;
 
 import java.io.BufferedReader;
 import java.util.Map;
-import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -36,6 +35,7 @@ public class TestRunWarTest {
 				response.setStatus(HTTP_OK);
 			}
 		};
+
 		assertTrue(get(url).useProxy("localhost", proxyPort).proxyBasic("user", "p4ssw0rd").ok());
 		assertEquals("user", proxyUser.get());
 		assertEquals("p4ssw0rd", proxyPassword.get());
@@ -61,6 +61,8 @@ public class TestRunWarTest {
 		reader.close();
 	}
 
+	// Not flaky, shared no mutual variabels/objects. Unless it shared
+	// SystemKeySpace with serviceTopPatitionNoArg
 	@Test
 	public void testServiceTopPartitionsNoArg() throws Exception {
 
@@ -82,6 +84,7 @@ public class TestRunWarTest {
 		assertEquals(1, cd.size());
 	}
 
+	// Not flaky, shared no mutual variabels/objects
 	public void serviceTopPartitionsNoArg() {
 
 		some.something(SystemKeyspace.persistLocalMetadata());

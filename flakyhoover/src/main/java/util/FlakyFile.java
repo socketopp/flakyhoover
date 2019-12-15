@@ -3,7 +3,7 @@ package util;
 import java.util.ArrayList;
 import java.util.List;
 
-import flakyhoover.AbstractFlaky;
+import flakyhoover.AbstractSmell;
 
 public class FlakyFile {
 
@@ -20,10 +20,25 @@ public class FlakyFile {
 		this.testName = testName;
 		this.category = category;
 		this.version = version;
-		this.setSmellyInstances(new ArrayList<AbstractFlaky>());
+		this.setSmellyInstances(new ArrayList<AbstractSmell>());
 	}
 
-	private List<AbstractFlaky> smellyInstances;
+	public FlakyFile(int id, String url, String sha, String testName, String className, String testMethod,
+			String category, String module, String path) {
+		super();
+		this.className = className;
+		this.testMethod = testMethod;
+		this.id = id;
+		this.url = url;
+		this.sha = sha;
+		this.module = module;
+		this.testName = testName;
+		this.category = category;
+		this.path = path;
+		this.setSmellyInstances(new ArrayList<AbstractSmell>());
+	}
+
+	private List<AbstractSmell> smellyInstances;
 	private int id;
 	private String className;
 	private String testMethod;
@@ -34,6 +49,7 @@ public class FlakyFile {
 	private String testName;
 	private String category;
 	private String version;
+	private String path;
 
 	public String getUrl() {
 		return url;
@@ -115,16 +131,24 @@ public class FlakyFile {
 		this.testMethod = testMethod;
 	}
 
-	public List<AbstractFlaky> getSmellyInstances() {
+	public List<AbstractSmell> getSmellyInstances() {
 		return smellyInstances;
 	}
 
-	public void setSmellyInstances(List<AbstractFlaky> smellyInstances) {
+	public void setSmellyInstances(List<AbstractSmell> smellyInstances) {
 		this.smellyInstances = smellyInstances;
 	}
 
-	public void addSmellyInstances(AbstractFlaky flaky) {
+	public void addSmellyInstances(AbstractSmell flaky) {
 		smellyInstances.add(flaky);
+	}
+
+	public String getPath() {
+		return path;
+	}
+
+	public void setPath(String path) {
+		this.path = path;
 	}
 
 }

@@ -84,7 +84,8 @@ public class TestHTMLLanguageParser extends TestCase {
 		return new Content(URL, BASE, text.getBytes(), "text/html", meta, NutchConfiguration.create());
 	}
 
-	public void testLanguageIndentifier() {
+	public void testLanguageIdentifier() {
+
 		try {
 			long total = 0;
 			LanguageIdentifier identifier;

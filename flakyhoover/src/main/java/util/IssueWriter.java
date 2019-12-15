@@ -3,7 +3,6 @@ package util;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.StringWriter;
-import java.util.ArrayList;
 
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Source;
@@ -17,9 +16,6 @@ import javax.xml.transform.stream.StreamResult;
 
 import org.w3c.dom.Document;
 import org.xml.sax.InputSource;
-
-import com.thoughtworks.xstream.XStream;
-import com.thoughtworks.xstream.io.xml.DomDriver;
 
 public class IssueWriter {
 
@@ -35,7 +31,6 @@ public class IssueWriter {
 		StringWriter strWriter = new StringWriter();
 		StreamResult result = new StreamResult(strWriter);
 		transformer.transform(source, result);
-		System.out.println(strWriter.getBuffer().toString());
 
 		return strWriter.getBuffer().toString();
 	}
@@ -62,52 +57,4 @@ public class IssueWriter {
 	}
 }
 
-////XStream xstream = new XStream(new StaxDriver());
-//XStream xstream = new XStream(new DomDriver());
-////XStream xstream = new XStream();
-//
-//xstream.autodetectAnnotations(true);
-//
-//
-//Issues issues = new Issues();
-//
-//ArrayList<Issue> issueslist = issues.getIssuesList();
-//issueslist.add(new Issue());
-//issueslist.add(new Issue());
-//issueslist.add(new Issue());
-//issues.setIssues(issueslist);
-
-//xstream.processAnnotations(Issues.class);
-
-
-// Using annotations in class Employee
-//xstream.alias("issue", Issue.class);
-//xstream.alias("issues", Issues.class);
-//xstream.processAnnotations(Issue.class);
-
-
-// Object to XML Conversion
-//String xml = xstream.toXML(issues.getIssues());
-// create the xml file
-//transform the DOM Object to an XML File
-
-//System.out.println(formatXml(xml));
-
-//DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-//DocumentBuilder db = dbf.newDocumentBuilder();
-//InputSource is = new InputSource(new StringReader(xml));
-//
-//Document doc = db.parse(is);
-////prettyPrint(doc);
-//
-//
-//
-//TransformerFactory transformerFactory = TransformerFactory.newInstance();
-//Transformer transformer = transformerFactory.newTransformer();
-//DOMSource domSource = new DOMSource(doc);
-//
-//StreamResult streamResult = new StreamResult(new File("newfile.xml"));
-
-
-//transformer.transform(domSource, streamResult);
 
