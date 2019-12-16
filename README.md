@@ -15,7 +15,7 @@ FlakyHoover is easy run, simply run the jar file like the example below:
 ```Bash
 $ java -jar flakyhoover.jar <path to project> <project name> 
 ```
-The following command would then produce an csv file containing all test methods that were detected as having a smell. The name of the file follow the following syntax: "<project name>_results.csv".
+The following command would then produce an csv file containing all test methods that were detected as having a smell. The name of the file follow the following syntax: "project name_results.csv".
 
 ### Contact
 
