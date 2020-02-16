@@ -17,6 +17,12 @@ $ java -jar flakyhoover.jar <path to project> <project name>
 ```
 The following command would then produce an csv file containing all test methods that were detected as having a smell. The name of the file follow the following syntax: "project name_results.csv".
 
+#### Changelog (dev branch)
+
+#### 2020-02-16 - Refactored and optimized Test Run War and made the implementation more correct. 
+
+In this version FlakyHoover only detect test methods annotated with @Test compared to previous version. Annotations were orignally introduced in Junit4 that was released in 2006. 
+
 ### Contact
 
 Please feel free to contact me on my student mail andla830@student.liu.se.
