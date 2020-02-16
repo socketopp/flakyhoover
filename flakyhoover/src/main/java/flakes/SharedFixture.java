@@ -7,18 +7,18 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
+import com.github.javaparser.Position;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
-import com.github.javaparser.ast.expr.AssignExpr;
-import com.github.javaparser.ast.expr.Expression;
-import com.github.javaparser.ast.expr.FieldAccessExpr;
+import com.github.javaparser.ast.body.Parameter;
+import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.expr.NameExpr;
-import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.github.javaparser.ast.expr.VariableDeclarationExpr;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 
@@ -31,7 +31,14 @@ import util.TestSmell;
 import util.Util;
 
 public class SharedFixture extends AbstractSmell {
+	
+	/*
+	 * TODO:
+	 * 1. Scan several tests classes inside the same file. Fix extending a class?
+	 * 2. If the shared variable exists in both setup and teardown, then it should not be regarded as a smell.
+	 */
 
+	private final static String COLLECT_STATE = "collectState";
 	private List<AbstractSmellElement> smellyElementList;
 	private String fileName;
 	private String projectName;
@@ -47,7 +54,7 @@ public class SharedFixture extends AbstractSmell {
 
 	@Override
 	public boolean getHasSmell() {
-		return smellyElementList.stream().filter(x -> x.getHasSmell()).count() >= 1;
+		return smellyElementList.stream().filter(AbstractSmellElement::getHasSmell).count() >= 1;
 	}
 
 	@Override
@@ -71,7 +78,7 @@ public class SharedFixture extends AbstractSmell {
 		classVisitor = new SharedFixture.ClassVisitor();
 		classVisitor.jClasses.add("LOG");
 
-		classVisitor.setState("collectState");
+		classVisitor.setState(COLLECT_STATE);
 		classVisitor.visit(testFileCompilationUnit, null);
 
 		ASTHelper.removeIntersectingVars(classVisitor.varDeclExpr, classVisitor.methodCalls);
@@ -82,17 +89,26 @@ public class SharedFixture extends AbstractSmell {
 		classVisitor.setState("analyzeRelationState");
 		classVisitor.visit(testFileCompilationUnit, null);
 
-
+//		System.out.println("classVariables: ");
+//		classVisitor.classVariables.forEach(a -> System.out.println(a));
+//		System.out.println();
+//
+//		System.out.println("methodCalls: ");
+//		classVisitor.methodCalls.forEach((key, value) -> {
+//			System.out.println("Key: " + key);
+//			System.out.println("Value: " + value);
+//			System.out.println("");
+//
+//		});
 
 	}
 
-	private class ClassVisitor extends VoidVisitorAdapter<Void> {
+	private class ClassVisitor extends VoidVisitorAdapter<Void>  {
 
 		private boolean hasSmell = false;
 		private boolean isTestClass = false;
 
 		private TestMethod testMethod;
-		private MethodDeclaration prevMethod = null;
 		private MethodDeclaration currentMethod = null;
 		private TestSmell testSmell = new TestSmell();
 
@@ -104,8 +120,6 @@ public class SharedFixture extends AbstractSmell {
 
 		private String flakinessType = "concurrency";
 		private String state;
-		private String parentType;
-		private int scope = 0;
 
 		private Map<String, Set<String>> methodCalls = new HashMap<>();
 		private Map<String, Set<String>> varDeclExpr = new HashMap<>();
@@ -119,6 +133,7 @@ public class SharedFixture extends AbstractSmell {
 		}
 
 		private void initTestSmells(String methodName) {
+			testSmell = new TestSmell();
 			testSmell.setFlakinessType(flakinessType);
 			testSmell.setProject(projectName);
 			testSmell.setTestMethod(methodName);
@@ -130,8 +145,6 @@ public class SharedFixture extends AbstractSmell {
 
 		@Override
 		public void visit(ClassOrInterfaceDeclaration n, Void arg) {
-			// TODO Scan several tests classes inside the same file
-			// TODO Fix extending a class??
 			if (!isTestClass) {
 				isTestClass = Util.isValidTestClass(n);
 			}
@@ -140,8 +153,7 @@ public class SharedFixture extends AbstractSmell {
 
 		@Override
 		public void visit(FieldDeclaration n, Void arg) {
-			if (isTestClass && state.equals("collectState")) {
-				// TODO Unconventional use of getchilnodes, should do it some other way
+			if (isTestClass && state.equals(COLLECT_STATE)) {
 				ASTHelper.addToClassVariabels(n, classVariables);
 			}
 			super.visit(n, arg);
@@ -152,325 +164,88 @@ public class SharedFixture extends AbstractSmell {
 
 			if (isTestClass) {
 
-				parentType = n.getParentNode().get().getClass().getSimpleName();
+				boolean isTestMethod = ASTHelper.isTestMethod(n);
 
-//				prevMethod = parentType.equals("ObjectCreationExpr") ? currentMethod : null;
+				addNestedFunctionParameters(n);
 
-				currentMethod = n;
-				if (parentType.equals("ClassOrInterfaceDeclaration")) {
-					prevMethod = currentMethod;
-				}
+				if (isTestMethod) {
+					currentMethod = n;
 
-				switch (state) {
-				case "collectState": {
+					switch (state) {
 
-					if (parentType.equals("ClassOrInterfaceDeclaration")) {
-						this.allClassMethods.add(n.getNameAsString());
-						this.allMethodsData.add(new IntelMethod(n.getNameAsString(), false));
-
-						if (!varDeclExpr.containsKey(n.getNameAsString())) {
-							varDeclExpr.put(n.getNameAsString(), new HashSet<String>());
-						}
-						if (!methodCalls.containsKey(n.getNameAsString())) {
-							methodCalls.put(n.getNameAsString(), new HashSet<String>());
-						}
+						case COLLECT_STATE:
+							initVariables();
+							break;
+	
+						case "analyzeFixtureState":
+							analyzeMethodFixtures();
+							break;
+	
+						case "analyzeRelationState":
+							analyzeMethodCalls();
+							break;
+	
+						default:
+							break;
 					}
-
-					// TODO Works as a ternary
-					String key = currentMethod.getNameAsString();
-
-					if (prevMethod != null) {
-
-						key = prevMethod.getNameAsString();
-
-					}
-
-					Set<String> varDeclExprArray = varDeclExpr.get(key);
-					if (varDeclExprArray != null) {
-						ASTHelper.addParameterToVariabelsDeclarations(n, varDeclExprArray);
-					}
-
-					break;
 				}
-
-				case "analyzeFixtureState": {
-
-					String key = prevMethod != null ? prevMethod.getNameAsString() : currentMethod.getNameAsString();
-					scope++;
-
-					if (parentType.equals("ClassOrInterfaceDeclaration")) {
-
-						initTestSmells(key);
-						testMethod = new TestMethod(n.getNameAsString(), n.getBegin().get().line);
-						testMethod.setHasSmell(false); // default value is false (i.e. no smell)
-					}
-					break;
-				}
-				}
-
-				super.visit(n, arg);
-
-				switch (state) {
-
-				case "collectState": {
-
-					// Reset
-
-					// TODO not sure about this.
-//					|| scope == 0
-					if (parentType.equals("ClassOrInterfaceDeclaration")) {
-						currentMethod = null;
-						prevMethod = null;
-					}
-
-					break;
-				}
-
-				case "analyzeFixtureState": {
-					scope--;
-
-					if (testMethod != null) {
-
-						if (testMethod != null) {
-
-							hasSmell = ASTHelper.analyzeTestRunWar(classVariables, methodCalls, n.getNameAsString());
-							if (!hasSmell) {
-								hasSmell = ASTHelper.analyzeTestRunWarStatic(classVariables, methodCalls,
-										n.getNameAsString());
-							}
-
-							testMethod.setHasSmell(hasSmell);
-
-							if (hasSmell && scope == 0) {
-								testSmell.setSmelly(true);
-								testSmells.add(testSmell);
-								smellyElementList.add(testMethod);
-								ASTHelper.setMethodStatusSmelly(n, allMethodsData, true);
-							}
-						}
-						if (parentType.equals("ClassOrInterfaceDeclaration") || scope == 0) {
-							testSmell = new TestSmell();
-							hasSmell = false;
-							currentMethod = null;
-							prevMethod = null;
-						}
-
-					}
-
-					break;
-
-				}
-
-				case "analyzeRelationState": {
-
-					String key = n.getNameAsString();
-
-					initTestSmells(key);
-					testMethod = new TestMethod(n.getNameAsString(), n.getBegin().get().line);
-					testMethod.setHasSmell(false); // default value is false (i.e. no smell)
-
-					// CUrrently working on relationships
-					hasSmell = analyzeRelations(n);
-					if (hasSmell) {
-
-						testMethod.setHasSmell(true);
-						testSmell.setSmelly(true);
-						testSmells.add(testSmell);
-						smellyElementList.add(testMethod);
-					}
-
-					hasSmell = false;
-					testSmell = new TestSmell();
-					break;
-				}
-				}
-
 			}
-
+		    /* Explanation of super.visit().
+			 * super.visit() recursively iterates all MethodDeclarations which means methods inside methods will be found first. 
+			 * Be performing checks before super() is called we assure that we find methods annotated with @Test before possible 
+			 * nested declarations. 
+			 */
+			super.visit(n, arg);
 		}
-
+		
 		@Override
-		public void visit(MethodCallExpr n, Void arg) {
+		public void visit(NameExpr n, Void arg) {
+			if (currentMethod != null && state.equals(COLLECT_STATE)) {
 
-			if (currentMethod != null && state.equals("collectState")) {
-
-				if (prevMethod != null) {
-					currentMethod = prevMethod;
-				}
-				String key = currentMethod.getNameAsString();
-
+				String method = currentMethod.getNameAsString();
 				Set<String> methodCallArray = null;
-				if (methodCalls.containsKey(key)) {
-					methodCallArray = methodCalls.get(key);
 
-				}
-				Set<String> varDeclExprArray = this.varDeclExpr.get(key);
-
-				String base = ASTHelper.checkIfClassMember(n);
-
-				if (base.equals("empty")) {
-					IntelMethod methodData = ASTHelper.getMethod(key, this.allMethodsData);
-					if (methodData != null) {
-						if (!n.getNameAsString().equals(key) && !methodExceptions.contains(n.getNameAsString())) {
-							methodData.addMethod(n.getNameAsString());
-						}
-					}
-				}
-
-				// Get paramters.
-				if (n.getArguments().size() > 0) {
-					for (Expression expr : n.getArguments()) {
-						String expr_val = expr.toString();
-
-						if ((expr.isNameExpr() || expr.isVariableDeclarationExpr()) && varDeclExprArray != null
-								&& !Util.checkIntBool(expr_val) && !Util.isStringUpperCase(expr_val)
-								&& !varDeclExprArray.contains(expr_val) && methodCallArray != null) {
-							methodCallArray.add(expr_val);
-
-						}
-					}
-				}
-
-				// get base object obj in: obj.getinstance().call(params...)
-				if (n.getScope().isPresent()) {
-
-					if (n.getScope().get() instanceof NameExpr) {
-
-						String callexpr = ((NameExpr) n.getScope().get()).getNameAsString();
-
-//						if (!varDeclExprArray.contains(callexpr) && !this.jClasses.contains(callexpr)
-						// TODO : not sure if I should check for jClasses or not....
-						// Shared resources could be a file or whatever...
-//						if (!this.jClasses.contains(callexpr) && !methodExceptions.contains(n.getNameAsString())) {
-
-						if (!methodExceptions.contains(n.getNameAsString())) {
-
-							// Check for static variables
-							if (Character.isUpperCase(n.toString().charAt(0))) {
-								if (!n.toString().contains("(") && methodCallArray != null) {
-									methodCallArray.add(n.toString());
-								}
-							} else {
-								// Normal variables/
-								if (methodCallArray != null) {
-									methodCallArray.add(callexpr);
-
-								}
-							}
-						}
-					}
-				}
-			}
-
-			super.visit(n, arg);
-		}
-
-		@Override
-		public void visit(ObjectCreationExpr n, Void arg) {
-			if (currentMethod != null && state.equals("collectState")) {
-
-				// Check if parent exist, if they exist, get their name so we can add referenced
-				// variables to their scope.
-				if (prevMethod != null) {
-					currentMethod = prevMethod;
-				}
-				String key = currentMethod.getNameAsString();
-				Set<String> methodCallArray = methodCalls.get(key);
-
-				// Get all params for any object creation.
-				if (n.getArguments().size() > 0) {
-					for (Expression expr : n.getArguments()) {
-						if (expr.isNameExpr() || expr.isFieldAccessExpr()) {
-							String expr_val = expr.toString();
-							// only variables/objects, not numbers or booleans
-							if (methodCallArray != null && !Util.checkIntBool(expr_val)) {
-								methodCallArray.add(expr_val);
-							}
-						}
-					}
+				if (methodCalls.containsKey(method)) {
+					methodCallArray = methodCalls.get(method);
+					methodCallArray.add(n.getNameAsString());
 				}
 			}
 			super.visit(n, arg);
-		}
-
-		@Override
-		public void visit(FieldAccessExpr n, Void arg) {
-			if (currentMethod != null && state.equals("collectState")) {
-
-				// Check if parent exist, if they exist, get their name so we can add referenced
-				// variables to their scope.
-				if (prevMethod != null) {
-					currentMethod = prevMethod;
-				}
-				String key = currentMethod.getNameAsString();
-
-				Set<String> methodCallArray = methodCalls.get(key);
-				Set<String> varDeclExprArray = this.varDeclExpr.get(key);
-
-				if (varDeclExprArray != null && methodCallArray != null) {
-					// Access of a field of an object or a class. In person.name "name" is the name
-					// and "person" is the scope.
-					if (!(n.findAncestor(MethodCallExpr.class).isPresent())) {
-						if (n.getScope().getParentNode().get().getNodesByType(NameExpr.class).size() > 0) {
-							String scope = n.getScope().getParentNode().get().getNodesByType(NameExpr.class).get(0)
-									.toString();
-//							if (!varDeclExprArray.contains(scope) && !n.toString().contains("(")
-//									&& !jClasses.contains(scope)) {
-
-							if (!varDeclExprArray.contains(scope) && !n.toString().contains("(")) {
-								methodCallArray.add(scope);
-							}
-						}
-					}
-				}
-
-				super.visit(n, arg);
-			}
 		}
 
 		@Override
 		public void visit(VariableDeclarationExpr n, Void arg) {
 
-			if (currentMethod != null && state.equals("collectState")) {
-				// Get all declarared variables such as Object obj = new Object(); We add obj to
-				// varDeclExprArray
+			if (currentMethod != null && state.equals(COLLECT_STATE)) {
+				Set<String> varDeclExprArray = null;
 
-				if (prevMethod != null) {
-					currentMethod = prevMethod;
+				if (varDeclExpr.containsKey(currentMethod.getNameAsString())) {
+					varDeclExprArray = varDeclExpr.get(currentMethod.getNameAsString());
+				
+					for (VariableDeclarator variableDeclarator : n.getVariables()) {
+						varDeclExprArray.add(variableDeclarator.getNameAsString());
+					}
 				}
-				String key = currentMethod.getNameAsString();
-
-//				 Check if parent does not exists. We don't want to add declared variables inside nested functions to the parent functions scope.
-
-				Set<String> varDeclExprArray = varDeclExpr.get(key);
-				if (varDeclExprArray != null)
-					ASTHelper.addToVariabelsDeclarations(n, varDeclExprArray);
-
 			}
 			super.visit(n, arg);
 		}
 
 		@Override
-		public void visit(AssignExpr n, Void arg) {
-			if (currentMethod != null && state.equals("collectState")) {
+		public void visit(MethodCallExpr n, Void arg) {
 
-				if (prevMethod != null) {
-					currentMethod = prevMethod;
+			if (currentMethod != null && state.equals(COLLECT_STATE)) {
+
+				String method = currentMethod.getNameAsString();
+				if (methodCalls.containsKey(method) && !n.getScope().isPresent()) {
+					/*
+					 * If no scope is present, that means we are calling on a local method in this
+					 * class.
+					 */
+					IntelMethod methodData = ASTHelper.getMethod(method, this.allMethodsData);
+					if (methodData != null && !methodExceptions.contains(method)) {
+						methodData.addMethod(n.getNameAsString());
+					}
 				}
-				String key = currentMethod.getNameAsString();
-
-				Set<String> methodCallArray = methodCalls.get(key);
-				Set<String> varDeclExprArray = varDeclExpr.get(key);
-
-				String value = n.getTarget().toString();
-
-				if (n.getTarget().isNameExpr() && varDeclExprArray != null && !varDeclExprArray.contains(value)
-						&& !Util.checkIntBool(value)) {
-					// TODO fixa alla nullpointer fel, inspektera kod och kör projekten.
-					methodCallArray.add(value);
-
-				}
-
 			}
 			super.visit(n, arg);
 		}
@@ -478,14 +253,12 @@ public class SharedFixture extends AbstractSmell {
 		public boolean analyzeRelations(MethodDeclaration n) {
 
 			for (String method : allClassMethods) {
-				if (method.equals(n.getNameAsString())) {
-					if (!ASTHelper.checkIfSmelly(method, allMethodsData)) {
-						IntelMethod intelMethod = ASTHelper.getMethod(method, allMethodsData);
+				if (method.equals(n.getNameAsString()) && !ASTHelper.checkIfSmelly(method, allMethodsData)) {
+					IntelMethod intelMethod = ASTHelper.getMethod(method, allMethodsData);
 						if (intelMethod != null && !intelMethod.isSmelly()) {
 							for (String call : intelMethod.getMethods()) {
 								if (ASTHelper.checkIfSmelly(call, allMethodsData)) {
 									return true;
-								}
 							}
 						}
 					}
@@ -493,6 +266,91 @@ public class SharedFixture extends AbstractSmell {
 			}
 			return false;
 		}
-	}
+		
+		private void analyzeMethodCalls() {
 
+			if (currentMethod != null) {
+				String method = currentMethod.getNameAsString();
+				if (!ASTHelper.checkIfSmelly(method, allMethodsData)) {
+
+					Optional<Position> position = currentMethod.getBegin();
+					int lineNr = position.isPresent() ? position.get().line : -1;
+					
+					initTestSmells(method);
+					testMethod = new TestMethod(method, lineNr);
+					testMethod.setHasSmell(false);
+					hasSmell = analyzeRelations(currentMethod);
+
+					if (hasSmell) {
+
+						testMethod.setHasSmell(hasSmell);
+						testSmell.setSmelly(hasSmell);
+						testSmells.add(testSmell);
+						smellyElementList.add(testMethod);
+						ASTHelper.setMethodStatusSmelly(currentMethod, allMethodsData, hasSmell);
+					}
+				}
+			}
+		}
+
+		private void analyzeMethodFixtures() {
+			if (currentMethod != null) {
+
+				String method = currentMethod.getNameAsString();
+				
+				Optional<Position> position = currentMethod.getBegin();
+				int lineNr = position.isPresent() ? position.get().line : -1;
+				
+				initTestSmells(method);
+				testMethod = new TestMethod(method, lineNr);
+				testMethod.setHasSmell(false); // default value is false (i.e. no smell)
+
+				hasSmell = ASTHelper.analyzeTestRunWar(classVariables, methodCalls, method);
+				if (hasSmell) {
+					testMethod.setHasSmell(hasSmell);
+					testSmell.setSmelly(hasSmell);
+					testSmells.add(testSmell);
+					smellyElementList.add(testMethod);
+					ASTHelper.setMethodStatusSmelly(currentMethod, allMethodsData, hasSmell);
+				}
+			}
+		}
+
+		private void initVariables() {
+			String methodName = currentMethod.getNameAsString();
+
+			if (!allClassMethods.contains(methodName)) {
+				allMethodsData.add(new IntelMethod(methodName, false));
+				allClassMethods.add(methodName);
+			}
+
+			if (!varDeclExpr.containsKey(methodName)) {
+
+				Set<String> parameters = new HashSet<>();
+
+				for (Parameter param : currentMethod.getParameters()) {
+					parameters.add(param.getNameAsString());
+				}
+				varDeclExpr.put(methodName, parameters);
+			}
+
+			if (!methodCalls.containsKey(methodName)) {
+				methodCalls.put(methodName, new HashSet<>());
+			}
+		}
+
+		private void addNestedFunctionParameters(MethodDeclaration n) {
+
+			if (currentMethod != null && varDeclExpr.containsKey(currentMethod.getNameAsString())) {
+
+				Set<String> variables = varDeclExpr.get(currentMethod.getNameAsString());
+
+				for (Parameter param : n.getParameters()) {
+					variables.add(param.getNameAsString());
+				}
+				varDeclExpr.put(currentMethod.getNameAsString(), variables);
+
+			}
+		}
+	}
 }

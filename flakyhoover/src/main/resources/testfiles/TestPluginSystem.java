@@ -74,7 +74,9 @@ public class TestPluginSystem extends TestCase {
 	}
 
 	/**
+	 * Not smelly
 	*/
+	@Test
 	public void testPluginConfiguration() {
 		String string = getPluginFolder();
 		File file = new File(string);
@@ -86,6 +88,7 @@ public class TestPluginSystem extends TestCase {
 
 	/**
 	*/
+	@Test
 	public void testLoadPlugins() {
 		PluginDescriptor[] descriptors = repository.getPluginDescriptors();
 		int k = descriptors.length;
@@ -100,6 +103,7 @@ public class TestPluginSystem extends TestCase {
 		}
 	}
 
+	@Test
 	public void testRepositoryCache() {
 		Configuration config = NutchConfiguration.create();
 		PluginRepository repo = PluginRepository.get(config);
@@ -119,6 +123,7 @@ public class TestPluginSystem extends TestCase {
 	/**
 	*  
 	*/
+	@Test
 	public void testGetExtensionAndAttributes() {
 		String xpId = " sdsdsd";
 		ExtensionPoint extensionPoint = repository.getExtensionPoint(xpId);
@@ -135,6 +140,7 @@ public class TestPluginSystem extends TestCase {
 	/**
 	 * @throws PluginRuntimeException
 	 */
+	@Test
 	public void testGetExtensionInstances() throws PluginRuntimeException {
 		Extension[] extensions = repository.getExtensionPoint(getGetExtensionId()).getExtensions();
 		assertEquals(extensions.length, fPluginCount);
@@ -153,6 +159,7 @@ public class TestPluginSystem extends TestCase {
 	* 
 	*  
 	*/
+	@Test
 	public void testGetClassLoader() {
 		PluginDescriptor[] descriptors = repository.getPluginDescriptors();
 		for (int i = 0; i < descriptors.length; i++) {
@@ -164,6 +171,7 @@ public class TestPluginSystem extends TestCase {
 	/**
 	 * @throws IOException
 	 */
+	@Test
 	public void testGetResources() throws IOException {
 		PluginDescriptor[] descriptors = repository.getPluginDescriptors();
 		for (int i = 0; i < descriptors.length; i++) {

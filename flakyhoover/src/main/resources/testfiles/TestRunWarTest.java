@@ -20,6 +20,7 @@ public class TestRunWarTest {
 	private static RequestHandler handler;
 	private ClientRegistry _clientRegistry = new ClientRegistry();
 
+	@Test
 	public void shakespeare() {
 		toBeAFunction(basicProxyAuthentication(), orNotAFunction, thatIsTheQuestion);
 	}
@@ -85,6 +86,7 @@ public class TestRunWarTest {
 	}
 
 	// Not flaky, shared no mutual variabels/objects
+	@Test
 	public void serviceTopPartitionsNoArg() {
 
 		some.something(SystemKeyspace.persistLocalMetadata());
@@ -93,6 +95,7 @@ public class TestRunWarTest {
 
 	// FROM:
 	// https://raw.githubusercontent.com/apache/qpid/0.18/qpid/java/perftests/src/test/java/org/apache/qpid/disttest/controller/ClientRegistryTest.java
+	@Test
 	public void testRegisterClient() {
 		assertEquals(0, _clientRegistry.getClients().size());
 
@@ -101,6 +104,7 @@ public class TestRunWarTest {
 
 	}
 
+	@Test
 	public void testRejectsDuplicateClientNames() {
 		_clientRegistry.registerClient(CLIENT1_REGISTERED_NAME);
 		try {
@@ -111,18 +115,21 @@ public class TestRunWarTest {
 		}
 	}
 
+	@Test
 	public void testAwaitOneClientWhenClientNotRegistered() {
 		int numberOfClientsAbsent = _clientRegistry.awaitClients(1, AWAIT_DELAY);
 		assertEquals(1, numberOfClientsAbsent);
 	}
-
+	
+	@Test
 	public void testAwaitOneClientWhenClientAlreadyRegistered() {
 		_clientRegistry.registerClient(CLIENT1_REGISTERED_NAME);
 
 		int numberOfClientsAbsent = _clientRegistry.awaitClients(1, AWAIT_DELAY);
 		assertEquals(0, numberOfClientsAbsent);
 	}
-
+	
+	@Test
 	public void testAwaitTwoClientWhenClientRegistersWhilstWaiting() {
 		_clientRegistry.registerClient(CLIENT1_REGISTERED_NAME);
 		registerClientLater(CLIENT2_REGISTERED_NAME, 50);
@@ -131,6 +138,7 @@ public class TestRunWarTest {
 		assertEquals(0, numberOfClientsAbsent);
 	}
 
+	@Test
 	private void registerClientLater(final String clientName, long delayInMillis) {
 		doLater(new TimerTask() {
 			@Override
@@ -139,7 +147,8 @@ public class TestRunWarTest {
 			}
 		}, delayInMillis);
 	}
-
+	
+	@Test
 	private void doLater(TimerTask task, long delayInMillis) {
 		Timer timer = new Timer();
 		timer.schedule(task, delayInMillis);

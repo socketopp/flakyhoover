@@ -73,6 +73,7 @@ public class TestGeneratorTest extends TestCase {
 	 *
 	 * @throws Exception
 	 */
+	@Test
 	public void testGenerateHighest() throws Exception {
 
 		final int NUM_RESULTS = 2;
@@ -131,6 +132,7 @@ public class TestGeneratorTest extends TestCase {
 	 * 
 	 * @throws Exception
 	 */
+	@Test
 	public void testGenerateHostLimit() throws Exception {
 		ArrayList<URLCrawlDatum> list = new ArrayList<URLCrawlDatum>();
 
@@ -180,6 +182,7 @@ public class TestGeneratorTest extends TestCase {
 	 * 
 	 * @throws Exception
 	 */
+	@Test
 	public void testGenerateDomainLimit() throws Exception {
 		ArrayList<URLCrawlDatum> list = new ArrayList<URLCrawlDatum>();
 
@@ -231,6 +234,7 @@ public class TestGeneratorTest extends TestCase {
 	 * @throws Exception
 	 * @throws IOException
 	 */
+	@Test
 	public void testFilter() throws IOException, Exception {
 
 		ArrayList<URLCrawlDatum> list = new ArrayList<URLCrawlDatum>();

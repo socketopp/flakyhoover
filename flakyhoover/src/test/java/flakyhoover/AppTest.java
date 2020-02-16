@@ -3,6 +3,7 @@ package flakyhoover;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -22,7 +23,7 @@ import util.TestSmell;
 @RunWith(JUnit4.class)
 public class AppTest extends TestCase {
 	/**
-	 * Rigorous Test :-)
+	 * Rigorous Tests :-)
 	 */
 
 	private static final String FIRE_AND_FORGET = "src\\main\\resources\\testfiles\\FireAndForgetTest.java";
@@ -30,6 +31,10 @@ public class AppTest extends TestCase {
 	private static final String CONDITIONAL_TEST_LOGIC = "src\\main\\resources\\testfiles\\TestConditionalTestLogic.java";
 
 	private static final String TEST_RUN_WAR_1 = "src\\main\\resources\\testfiles\\TestRunWarTest.java";
+	
+	private static final String TestNestedFunction = "src\\main\\resources\\testfiles\\TestNestedFunction.java";
+	
+	private static final String SharedFixtureTest = "src\\main\\resources\\testfiles\\SharedFixtureTest.java";
 
 	// FROM:
 	// https://github.com/apache/nutch/blob/branch-1.4/src/test/org/apache/nutch/crawl/TestGenerator.java
@@ -123,12 +128,17 @@ public class AppTest extends TestCase {
 
 	@Test
 	public void testResourceOptimismOnGeneratorFile() throws FileNotFoundException {
+		// TODO: refactor resource optimism
 		FlakyDetector flakyDetector = new FlakyDetector(true, new ResourceOptimism());
 
 		// Both test run war and resource optimism use same file
 		TestFile testFile = new TestFile("flakyhoover", TEST_RUN_WAR_2, "");
 		testFile = flakyDetector.detect(testFile);
 
+		int actual = testFile.getSmellyInst().get(0).getTestSmells().size();
+		int expected = 7;
+
+		assertEquals(actual, expected);
 		String setUp = testFile.getSmellyInst().get(0).getTestSmells().get(0).getTestMethod();
 		String tearDown = testFile.getSmellyInst().get(0).getTestSmells().get(1).getTestMethod();
 		String delete = testFile.getSmellyInst().get(0).getTestSmells().get(2).getTestMethod();
@@ -140,10 +150,8 @@ public class AppTest extends TestCase {
 		String generateFetchlist = testFile.getSmellyInst().get(0).getTestSmells().get(8).getTestMethod();
 		String createCrawlDB = testFile.getSmellyInst().get(0).getTestSmells().get(9).getTestMethod();
 
-		int actual = testFile.getSmellyInst().get(0).getTestSmells().size();
-		int expected = 10;
 
-		assertEquals(actual, expected);
+
 
 		assertEquals(setUp, "setUp");
 		assertEquals(tearDown, "tearDown");
@@ -157,16 +165,39 @@ public class AppTest extends TestCase {
 		assertEquals(createCrawlDB, "createCrawlDB");
 
 	}
+	
+	@Test
+	public void testNestedDeclaredFunctions() throws FileNotFoundException {
+		FlakyDetector flakyDetector = new FlakyDetector(true, new SharedFixture());
+		TestFile testFile = new TestFile("flakyhoover", TestNestedFunction, "");
+//		TestFile testFile = new TestFile("flakyhoover", TEST_RUN_WAR_3, "");
+//		TestFile testFile = new TestFile("flakyhoover", SharedFixtureTest, "");
+		testFile = flakyDetector.detect(testFile);
+		
+		int size = testFile.getSmellyInst().get(0).getTestSmells().size();
+		assertEquals(4, size);
 
+		String basicProxyAuthentication = testFile.getSmellyInst().get(0).getTestSmells().get(0).getTestMethod();
+		String getReader = testFile.getSmellyInst().get(0).getTestSmells().get(1).getTestMethod();
+		String nextFunc = testFile.getSmellyInst().get(0).getTestSmells().get(2).getTestMethod();
+		String recursive = testFile.getSmellyInst().get(0).getTestSmells().get(3).getTestMethod();
+		assertEquals(basicProxyAuthentication, "basicProxyAuthentication");
+		assertEquals(getReader, "getReader");
+		assertEquals(nextFunc, "nextFunc");
+		assertEquals(recursive, "recursive");
+	}
+	
 	@Test
 	public void testSharedFixture1() throws FileNotFoundException {
 
 		FlakyDetector flakyDetector = new FlakyDetector(true, new SharedFixture());
 		TestFile testFile = new TestFile("flakyhoover", TEST_RUN_WAR_1, "");
 		testFile = flakyDetector.detect(testFile);
-
-//		"serviceTopPartitionsNoArg"
-//		"testServiceTopPartitionsNoArg",
+		
+		for (int i = 0; i < testFile.getSmellyInst().get(0).getTestSmells().size(); i++) {
+			String test = testFile.getSmellyInst().get(0).getTestSmells().get(i).getTestMethod();
+			System.out.println("test: " + test);
+	}
 
 		String basicProxyAuthentication = testFile.getSmellyInst().get(0).getTestSmells().get(0).getTestMethod();
 		String getReader = testFile.getSmellyInst().get(0).getTestSmells().get(1).getTestMethod();
@@ -202,18 +233,12 @@ public class AppTest extends TestCase {
 	@Test
 	public void testSharedFixture2() throws FileNotFoundException {
 
-		ArrayList<String> assertions = new ArrayList<String>(Arrays.asList("setUp", "tearDown", "delete",
-				"testGenerateHighest", "testGenerateHostLimit", "testGenerateDomainLimit", "testFilter", "readContents",
-				"generateFetchlist", "createCrawlDB", "createURLCrawlDatum"));
+		ArrayList<String> assertions = new ArrayList<String>(Arrays.asList("testGenerateHighest", "testGenerateHostLimit",
+				"testGenerateDomainLimit", "testFilter"));
 
 		FlakyDetector flakyDetector = new FlakyDetector(true, new SharedFixture());
 		TestFile testFile = new TestFile("flakyhoover", TEST_RUN_WAR_2, "");
 		testFile = flakyDetector.detect(testFile);
-
-//		for (int i = 0; i < testFile.getFlakyInst().get(0).getTestSmells().size(); i++) {
-//			System.out.println("test: " + testFile.getFlakyInst().get(0).getTestSmells().get(i).getTestMethod());
-//			System.out.println("assert: " + assertions.get(i));
-//		}
 
 		assertEquals(assertions.size(), testFile.getSmellyInst().get(0).getTestSmells().size());
 
@@ -227,7 +252,7 @@ public class AppTest extends TestCase {
 	public void testSharedFixture3() throws FileNotFoundException {
 
 		ArrayList<String> assertions = new ArrayList<String>(
-				Arrays.asList("setUp", "testModeAccept", "testModeReject", "testModeAcceptIgnoreCase",
+				Arrays.asList("testModeAccept", "testModeReject", "testModeAcceptIgnoreCase",
 						"testModeRejectIgnoreCase", "testModeAcceptAndNonPathFilter", "testModeAcceptAndPathFilter"));
 
 		FlakyDetector flakyDetector = new FlakyDetector(true, new SharedFixture());
@@ -235,6 +260,7 @@ public class AppTest extends TestCase {
 		testFile = flakyDetector.detect(testFile);
 
 		assertEquals(assertions.size(), testFile.getSmellyInst().get(0).getTestSmells().size());
+		
 		for (int i = 0; i < testFile.getSmellyInst().size(); i++) {
 			String ts = testFile.getSmellyInst().get(0).getTestSmells().get(i).getTestMethod();
 			assertEquals(ts, assertions.get(i));
@@ -244,13 +270,13 @@ public class AppTest extends TestCase {
 	@Test
 	public void testSharedFixture4() throws FileNotFoundException {
 
-		ArrayList<String> assertions = new ArrayList<String>(Arrays.asList("setUp", "tearDown", "testLoadPlugins",
-				"testGetExtensionAndAttributes", "testGetExtensionInstances", "testGetClassLoader", "testGetResources",
-				"getPluginFolder", "createDummyPlugins", "testPluginConfiguration"));
+		ArrayList<String> assertions = new ArrayList<String>(Arrays.asList("testLoadPlugins",
+				"testGetExtensionAndAttributes", "testGetExtensionInstances", "testGetClassLoader", "testGetResources"));
 
 		FlakyDetector flakyDetector = new FlakyDetector(true, new SharedFixture());
 		TestFile testFile = new TestFile("flakyhoover", TEST_RUN_WAR_4, "");
 		testFile = flakyDetector.detect(testFile);
+		
 
 		for (int i = 0; i < testFile.getSmellyInst().size(); i++) {
 			String ts = testFile.getSmellyInst().get(0).getTestSmells().get(i).getTestMethod();
@@ -462,7 +488,7 @@ public class AppTest extends TestCase {
 		TestFile testFile = new TestFile("flakyhoover", TEST_COLUMN_PAGNATION_FILTER, "");
 		testFile = flakyDetector.detect(testFile);
 
-		ArrayList<TestSmell> smells = testFile.getSmellyInst().get(0).getTestSmells();
+		List<TestSmell> smells = testFile.getSmellyInst().get(0).getTestSmells();
 
 		int actual = testFile.getSmellyInst().get(0).getTestSmells().size();
 		int expected = 0;
@@ -477,7 +503,7 @@ public class AppTest extends TestCase {
 		TestFile testFile = new TestFile("flakyhoover", TEST_RUN_WAR_3, "");
 		testFile = flakyDetector.detect(testFile);
 
-		ArrayList<TestSmell> smells = testFile.getSmellyInst().get(0).getTestSmells();
+		List<TestSmell> smells = testFile.getSmellyInst().get(0).getTestSmells();
 		int actual = testFile.getSmellyInst().get(0).getTestSmells().size();
 		int expected = 0;
 		assertEquals(actual, expected);

@@ -72,6 +72,7 @@ public class TestSuffixURLFilter extends TestCase {
 		filter = new SuffixURLFilter(new StringReader(suffixes));
 	}
 
+	@Test
 	public void testModeAccept() {
 		filter.setIgnoreCase(false);
 		filter.setModeAccept(true);
@@ -79,7 +80,8 @@ public class TestSuffixURLFilter extends TestCase {
 			assertTrue(urlsModeAccept[i] == filter.filter(urls[i]));
 		}
 	}
-
+	
+	@Test
 	public void testModeReject() {
 		filter.setIgnoreCase(false);
 		filter.setModeAccept(false);
@@ -87,7 +89,8 @@ public class TestSuffixURLFilter extends TestCase {
 			assertTrue(urlsModeReject[i] == filter.filter(urls[i]));
 		}
 	}
-
+	
+	@Test
 	public void testModeAcceptIgnoreCase() {
 		filter.setIgnoreCase(true);
 		filter.setModeAccept(true);
@@ -95,7 +98,8 @@ public class TestSuffixURLFilter extends TestCase {
 			assertTrue(urlsModeAcceptIgnoreCase[i] == filter.filter(urls[i]));
 		}
 	}
-
+	
+	@Test
 	public void testModeRejectIgnoreCase() {
 		filter.setIgnoreCase(true);
 		filter.setModeAccept(false);
@@ -103,7 +107,8 @@ public class TestSuffixURLFilter extends TestCase {
 			assertTrue(urlsModeRejectIgnoreCase[i] == filter.filter(urls[i]));
 		}
 	}
-
+	
+	@Test
 	public void testModeAcceptAndNonPathFilter() {
 		filter.setModeAccept(true);
 		filter.setFilterFromPath(false);
@@ -112,6 +117,7 @@ public class TestSuffixURLFilter extends TestCase {
 		}
 	}
 
+	@Test
 	public void testModeAcceptAndPathFilter() {
 		filter.setModeAccept(true);
 		filter.setFilterFromPath(true);

@@ -1,7 +1,6 @@
 package flakyhoover;
 
 import java.io.FileNotFoundException;
-import java.util.ArrayList;
 import java.util.List;
 
 import com.github.javaparser.ast.CompilationUnit;
@@ -20,6 +19,6 @@ public abstract class AbstractSmell {
 
 	public abstract List<AbstractSmellElement> getSmellyElements();
 
-	public abstract ArrayList<TestSmell> getTestSmells();
+	public abstract List<TestSmell> getTestSmells();
 
 }

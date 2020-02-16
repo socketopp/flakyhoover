@@ -15,6 +15,7 @@ import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.expr.Expression;
+import com.github.javaparser.ast.expr.MarkerAnnotationExpr;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.expr.VariableDeclarationExpr;
 
@@ -226,9 +227,7 @@ public class ASTHelper {
 
 	public static void addToVariabelsDeclarations(VariableDeclarationExpr n, Set<String> variabelsDeclarations) {
 		for (VariableDeclarator variableDeclarator : n.getVariables()) {
-
-			String name = variableDeclarator.getNameAsString();
-			variabelsDeclarations.add(name);
+			variabelsDeclarations.add(variableDeclarator.getNameAsString());
 		}
 	}
 
@@ -274,4 +273,9 @@ public class ASTHelper {
 
 	}
 
+	public static boolean isTestMethod(MethodDeclaration n) {
+		boolean hasTestAnnotation = n.getAnnotations().contains(new MarkerAnnotationExpr("Test"));
+		return hasTestAnnotation;
+	}	
+	
 }

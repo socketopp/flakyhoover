@@ -153,7 +153,7 @@ public class DocumentWriter {
 
 		for (AbstractSmell flaky : testfile.getSmellyInst()) {
 
-			ArrayList<TestSmell> smells = flaky.getTestSmells();
+			List<TestSmell> smells = flaky.getTestSmells();
 			if (smells != null) {
 
 				for (TestSmell smell : smells) {

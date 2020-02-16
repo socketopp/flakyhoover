@@ -1,9 +1,11 @@
 package flakyhoover;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import flakes.SharedFixture;
 import util.DocumentReader;
 import util.DocumentWriter;
 import util.FlakyFile;
@@ -19,6 +21,13 @@ public class Main {
 	}
 
 	public static void main(String[] args) throws IOException {
+
+		// analysis(args);
+
+		testing();
+	}
+
+	public static void analysis(String[] args) throws IOException {
 		String pathToProject = null;
 		String projectName = null;
 
@@ -89,6 +98,16 @@ public class Main {
 		System.out.println("\nAnalysis took " + duration + " seconds and finished with " + outputData.size()
 				+ " instances of test smells.");
 
+	}
+
+	public static void testing() throws FileNotFoundException {
+
+		FlakyDetector flakyDetector = new FlakyDetector(true, new SharedFixture());
+
+		flakyDetector.detect(
+				new TestFile("test", "src\\main\\resources\\testfiles\\SharedFixtureTest.java", "productionFilePath"));
+		
+		System.out.println("DONE");
 	}
 
 	private void replicateThesis() throws IOException {
