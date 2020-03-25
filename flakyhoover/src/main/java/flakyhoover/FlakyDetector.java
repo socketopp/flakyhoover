@@ -9,11 +9,11 @@ import java.util.stream.Collectors;
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 
-import flakes.ConditionalTestLogic;
-import flakes.FireAndForget;
-import flakes.IndirectTesting;
-import flakes.ResourceOptimism;
-import flakes.SharedFixture;
+import smells.ConditionalTestLogic;
+import smells.FireAndForget;
+import smells.IndirectTesting;
+import smells.ResourceOptimism;
+import smells.SharedFixture;
 
 public class FlakyDetector {
 

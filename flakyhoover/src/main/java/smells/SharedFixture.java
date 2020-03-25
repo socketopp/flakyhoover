@@ -1,4 +1,4 @@
-package flakes;
+package smells;
 
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
@@ -88,18 +88,6 @@ public class SharedFixture extends AbstractSmell {
 
 		classVisitor.setState("analyzeRelationState");
 		classVisitor.visit(testFileCompilationUnit, null);
-
-//		System.out.println("classVariables: ");
-//		classVisitor.classVariables.forEach(a -> System.out.println(a));
-//		System.out.println();
-//
-//		System.out.println("methodCalls: ");
-//		classVisitor.methodCalls.forEach((key, value) -> {
-//			System.out.println("Key: " + key);
-//			System.out.println("Value: " + value);
-//			System.out.println("");
-//
-//		});
 
 	}
 

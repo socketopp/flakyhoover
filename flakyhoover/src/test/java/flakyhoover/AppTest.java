@@ -9,12 +9,12 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-import flakes.ConditionalTestLogic;
-import flakes.FireAndForget;
-import flakes.IndirectTesting;
-import flakes.ResourceOptimism;
-import flakes.SharedFixture;
 import junit.framework.TestCase;
+import smells.ConditionalTestLogic;
+import smells.FireAndForget;
+import smells.IndirectTesting;
+import smells.ResourceOptimism;
+import smells.SharedFixture;
 import util.TestSmell;
 
 /**
@@ -86,10 +86,16 @@ public class AppTest extends TestCase {
 		FlakyDetector flakyDetector = new FlakyDetector(true, new ResourceOptimism());
 		TestFile testFile = new TestFile("flakyhoover", TEST_RESOURCE_OPTIMISM, "");
 		testFile = flakyDetector.detect(testFile);
-
-//		for (TestSmell ts : testFile.getFlakyInst().get(0).getTestSmells()) {
-//			System.out.println("TS: " + ts.getTestMethod());
-//		}
+		
+		
+		for (TestSmell ts : testFile.getSmellyInst().get(0).getTestSmells()) {
+			System.out.println("TS: " + ts.getTestMethod());
+			// THis one works now.
+		}
+		
+		int actual = testFile.getSmellyInst().get(0).getTestSmells().size();
+		int expected = 13;
+		assertEquals(actual, expected);
 
 		String testPages = testFile.getSmellyInst().get(0).getTestSmells().get(0).getTestMethod();
 		String assertLink = testFile.getSmellyInst().get(0).getTestSmells().get(1).getTestMethod();
@@ -104,12 +110,7 @@ public class AppTest extends TestCase {
 		String saveImage_noImageFile_ko = testFile.getSmellyInst().get(0).getTestSmells().get(9).getTestMethod();
 		String relationFunction = testFile.getSmellyInst().get(0).getTestSmells().get(10).getTestMethod();
 		String readContents = testFile.getSmellyInst().get(0).getTestSmells().get(11).getTestMethod();
-		String classVariableExample = testFile.getSmellyInst().get(0).getTestSmells().get(12).getTestMethod();
-
-		int actual = testFile.getSmellyInst().get(0).getTestSmells().size();
-		int expected = 13;
-
-		assertEquals(actual, expected);
+		String relationSmell = testFile.getSmellyInst().get(0).getTestSmells().get(12).getTestMethod();
 
 		assertEquals(testPages, "testPages");
 		assertEquals(assertLink, "assertLink");
@@ -123,60 +124,64 @@ public class AppTest extends TestCase {
 		assertEquals(saveImage_noImageFile_ko, "saveImage_noImageFile_ko");
 		assertEquals(relationFunction, "relationFunction");
 		assertEquals(readContents, "readContents");
-		assertEquals(classVariableExample, "classVariableExample");
+		assertEquals(relationSmell, "relationSmell");
+	}
+	
+	/*
+	 * Test function helper  
+	 */
+	@Test
+	public void testResourceOptimismHelper() throws FileNotFoundException {
+		FlakyDetector flakyDetector = new FlakyDetector(true, new ResourceOptimism());
+
+		TestFile testFile = new TestFile("flakyhoover", SharedFixtureTest, "");
+		testFile = flakyDetector.detect(testFile);
+		for (TestSmell ts : testFile.getSmellyInst().get(0).getTestSmells()) {
+			
+			System.out.println("TS: " + ts.getTestMethod());
+			// THis one works now.
+			assertEquals(true,true);
+		}
 	}
 
 	@Test
 	public void testResourceOptimismOnGeneratorFile() throws FileNotFoundException {
-		// TODO: refactor resource optimism
 		FlakyDetector flakyDetector = new FlakyDetector(true, new ResourceOptimism());
 
 		// Both test run war and resource optimism use same file
 		TestFile testFile = new TestFile("flakyhoover", TEST_RUN_WAR_2, "");
 		testFile = flakyDetector.detect(testFile);
 
+		for (TestSmell ts : testFile.getSmellyInst().get(0).getTestSmells()) {
+			System.out.println("TS: " + ts.getTestMethod());
+			// THis one works now.
+		}
+		
 		int actual = testFile.getSmellyInst().get(0).getTestSmells().size();
-		int expected = 7;
+		int expected = 4;
 
 		assertEquals(actual, expected);
-		String setUp = testFile.getSmellyInst().get(0).getTestSmells().get(0).getTestMethod();
-		String tearDown = testFile.getSmellyInst().get(0).getTestSmells().get(1).getTestMethod();
-		String delete = testFile.getSmellyInst().get(0).getTestSmells().get(2).getTestMethod();
-		String testGenerateHighest = testFile.getSmellyInst().get(0).getTestSmells().get(3).getTestMethod();
-		String testGenerateHostLimit = testFile.getSmellyInst().get(0).getTestSmells().get(4).getTestMethod();
-		String testGenerateDomainLimit = testFile.getSmellyInst().get(0).getTestSmells().get(5).getTestMethod();
-		String testFilter = testFile.getSmellyInst().get(0).getTestSmells().get(6).getTestMethod();
-		String readContents = testFile.getSmellyInst().get(0).getTestSmells().get(7).getTestMethod();
-		String generateFetchlist = testFile.getSmellyInst().get(0).getTestSmells().get(8).getTestMethod();
-		String createCrawlDB = testFile.getSmellyInst().get(0).getTestSmells().get(9).getTestMethod();
 
+		String testGenerateHighest = testFile.getSmellyInst().get(0).getTestSmells().get(0).getTestMethod();
+		String testGenerateHostLimit = testFile.getSmellyInst().get(0).getTestSmells().get(1).getTestMethod();
+		String testGenerateDomainLimit = testFile.getSmellyInst().get(0).getTestSmells().get(2).getTestMethod();
+		String testFilter = testFile.getSmellyInst().get(0).getTestSmells().get(3).getTestMethod();
 
-
-
-		assertEquals(setUp, "setUp");
-		assertEquals(tearDown, "tearDown");
-		assertEquals(delete, "delete");
 		assertEquals(testGenerateHighest, "testGenerateHighest");
 		assertEquals(testGenerateHostLimit, "testGenerateHostLimit");
 		assertEquals(testGenerateDomainLimit, "testGenerateDomainLimit");
 		assertEquals(testFilter, "testFilter");
-		assertEquals(readContents, "readContents");
-		assertEquals(generateFetchlist, "generateFetchlist");
-		assertEquals(createCrawlDB, "createCrawlDB");
-
 	}
 	
 	@Test
 	public void testNestedDeclaredFunctions() throws FileNotFoundException {
 		FlakyDetector flakyDetector = new FlakyDetector(true, new SharedFixture());
 		TestFile testFile = new TestFile("flakyhoover", TestNestedFunction, "");
-//		TestFile testFile = new TestFile("flakyhoover", TEST_RUN_WAR_3, "");
-//		TestFile testFile = new TestFile("flakyhoover", SharedFixtureTest, "");
 		testFile = flakyDetector.detect(testFile);
 		
 		int size = testFile.getSmellyInst().get(0).getTestSmells().size();
 		assertEquals(4, size);
-
+		
 		String basicProxyAuthentication = testFile.getSmellyInst().get(0).getTestSmells().get(0).getTestMethod();
 		String getReader = testFile.getSmellyInst().get(0).getTestSmells().get(1).getTestMethod();
 		String nextFunc = testFile.getSmellyInst().get(0).getTestSmells().get(2).getTestMethod();
@@ -193,11 +198,6 @@ public class AppTest extends TestCase {
 		FlakyDetector flakyDetector = new FlakyDetector(true, new SharedFixture());
 		TestFile testFile = new TestFile("flakyhoover", TEST_RUN_WAR_1, "");
 		testFile = flakyDetector.detect(testFile);
-		
-		for (int i = 0; i < testFile.getSmellyInst().get(0).getTestSmells().size(); i++) {
-			String test = testFile.getSmellyInst().get(0).getTestSmells().get(i).getTestMethod();
-			System.out.println("test: " + test);
-	}
 
 		String basicProxyAuthentication = testFile.getSmellyInst().get(0).getTestSmells().get(0).getTestMethod();
 		String getReader = testFile.getSmellyInst().get(0).getTestSmells().get(1).getTestMethod();
@@ -290,9 +290,6 @@ public class AppTest extends TestCase {
 		FlakyDetector flakyDetector = new FlakyDetector(true, new SharedFixture());
 		TestFile testFile = new TestFile("flakyhoover", TEST_RUN_WAR_5, "");
 		testFile = flakyDetector.detect(testFile);
-//		for (TestSmell ts : testFile.getFlakyInst().get(0).getTestSmells()) {
-//			System.out.println("TS: " + ts.getTestMethod());
-//		}
 		assertTrue(testFile.getSmellyInst().get(0).getTestSmells().isEmpty());
 	}
 
@@ -301,10 +298,6 @@ public class AppTest extends TestCase {
 		FlakyDetector flakyDetector = new FlakyDetector(true, new SharedFixture());
 		TestFile testFile = new TestFile("flakyhoover", TEST_RUN_WAR_6, "");
 		testFile = flakyDetector.detect(testFile);
-//		for (TestSmell ts : testFile.getFlakyInst().get(0).getTestSmells()) {
-//			System.out.println("TS: " + ts.getTestMethod());
-//		}
-
 		assertTrue(testFile.getSmellyInst().get(0).getTestSmells().isEmpty());
 	}
 
@@ -320,12 +313,6 @@ public class AppTest extends TestCase {
 		String testServiceTopPartitionsNoArg = testFile.getSmellyInst().get(0).getTestSmells().get(2).getTestMethod();
 		String testContinuousScheduling = testFile.getSmellyInst().get(0).getTestSmells().get(3).getTestMethod();
 		String niftyTest = testFile.getSmellyInst().get(0).getTestSmells().get(4).getTestMethod();
-
-//		String asyncIssue = testFile.getFlakyInst().get(0).getTestSmells().get(5).getTestMethod();
-
-		for (TestSmell ts : testFile.getSmellyInst().get(0).getTestSmells()) {
-			System.out.println("TS: " + ts.getTestMethod());
-		}
 
 		int actual = testFile.getSmellyInst().get(0).getTestSmells().size();
 		int expected = 5;
@@ -362,10 +349,6 @@ public class AppTest extends TestCase {
 
 		assertEquals(actual, expected);
 
-//		for (TestSmell ts : testFile.getFlakyInst().get(0).getTestSmells()) {
-//			System.out.println("TS: " + ts.getTestMethod());
-//		}
-
 		assertEquals(testMultipleValueSetsTestwithoutDeclarationOrAssignmentinBody,
 				"testMultipleValueSetsTestwithoutDeclarationOrAssignmentinBody");
 		assertEquals(testDisplayCurrentTime_whenever, "testDisplayCurrentTime_whenever");
@@ -390,14 +373,9 @@ public class AppTest extends TestCase {
 		int actual = testFile.getSmellyInst().get(0).getTestSmells().size();
 		int expected = 3;
 
-		for (TestSmell ts : testFile.getSmellyInst().get(0).getTestSmells()) {
-			System.out.println("TS: " + ts.getTestMethod());
-		}
-
 		assertEquals(actual, expected);
 
 		assertEquals(testJarVisitorFactoryNested, "testJarVisitorFactoryNested");
-
 		assertEquals(testJarVisitorFactory, "testJarVisitorFactory");
 		assertEquals(relationTest, "relationTest");
 
@@ -559,20 +537,4 @@ public class AppTest extends TestCase {
 		assertEquals(testMetaHTMLParsing, "testMetaHTMLParsing");
 		assertEquals(getContent, "getContent");
 	}
-
-//	@Test
-//	public void testFindAllReferences() throws FileNotFoundException {
-//
-//		FlakyDetector flakyDetector = new FlakyDetector(true, new SharedFixture());
-//		TestFile testFile = new TestFile("flakyhoover", TEST_RUN_WAR, "");
-//		testFile = flakyDetector.detect(testFile);
-//		
-//
-//	}
-
-//	@Test
-//	public void shouldAnswerWithTrue() {
-//		assertTrue(1 == 2);
-//	}
-
 }

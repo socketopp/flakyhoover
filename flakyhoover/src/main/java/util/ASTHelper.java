@@ -5,10 +5,12 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.github.javaparser.Position;
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
@@ -17,11 +19,16 @@ import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.MarkerAnnotationExpr;
 import com.github.javaparser.ast.expr.MethodCallExpr;
+import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.expr.VariableDeclarationExpr;
 
 import flakyhoover.IntelMethod;
 
 public class ASTHelper {
+	
+	private ASTHelper() {
+		
+	}
 
 	private static List<String> exceptions = new ArrayList<>(
 			Arrays.asList("Boolean", "Byte", "Short", "Character", "toString", "Integer", "Long", "Float", "Double",
@@ -86,9 +93,9 @@ public class ASTHelper {
 
 	public static String getSimpleNameRec(ArrayList<Node> nodes) {
 		String returnString = "";
-		if (nodes.size() > 0) {
+		if (!nodes.isEmpty()) {
 			Node node = nodes.get(0);
-			if (node.getClass().getSimpleName().equals("VariableDeclarator")) {
+			if (node instanceof VariableDeclarator) {
 				String type = node.getChildNodes().get(0).getClass().getSimpleName();
 				String value = node.getChildNodes().get(0).toString();
 				if (type.equals("ClassOrInterfaceType") && !value.equals("String")) {
@@ -232,10 +239,9 @@ public class ASTHelper {
 	}
 
 	public static void addParams(MethodDeclaration n, Set<String> methodVariables) {
-		if (n.getParameters().size() > 0) {
+		if (!n.getParameters().isEmpty()) {
 			for (Parameter param : n.getParameters()) {
 				if (param.getTypeAsString().equals("File") || param.getTypeAsString().equals("Path")) {
-
 					methodVariables.add(param.getNameAsString());
 				}
 			}
@@ -244,7 +250,7 @@ public class ASTHelper {
 
 	public static void addIndirectParams(MethodDeclaration n, Set<String> indirectClasses, ArrayList<String> jClasses,
 			String className) {
-		if (n.getParameters().size() > 0) {
+		if (!n.getParameters().isEmpty()) {
 			for (Parameter param : n.getParameters()) {
 				String name = param.getNameAsString();
 				String type = param.getTypeAsString();
@@ -257,7 +263,7 @@ public class ASTHelper {
 
 	public static void addParameterToVariabelsDeclarations(MethodDeclaration n, Set<String> variabelsDeclarations) {
 
-		if (n.getParameters().size() > 0) {
+		if (!n.getParameters().isEmpty()) {
 			for (Parameter param : n.getParameters()) {
 
 				String parameter = getParameter(param);
@@ -274,8 +280,36 @@ public class ASTHelper {
 	}
 
 	public static boolean isTestMethod(MethodDeclaration n) {
-		boolean hasTestAnnotation = n.getAnnotations().contains(new MarkerAnnotationExpr("Test"));
-		return hasTestAnnotation;
+		return n.getAnnotations().contains(new MarkerAnnotationExpr("Test"));
 	}	
+	
+	public static boolean hasNodeNameExpr(MethodCallExpr n) {
+		
+		Optional<Expression> scope = n.getScope();
+		return scope.isPresent() && scope.get() instanceof NameExpr;
+
+	}
+
+	public static NameExpr getNameExpr(MethodCallExpr n) {
+		
+		NameExpr nameExpr = null;
+		
+		if(n.getScope().isPresent()) {
+			Optional<Expression> expression = n.getScope();
+			if(expression.isPresent()) {
+				Expression expr = expression.get();
+				if(expr instanceof NameExpr) {
+					nameExpr = expr.asNameExpr();
+				}
+			}
+		}
+		
+		return nameExpr;
+	}
+
+	public static int getLine(MethodDeclaration currentMethod) {
+		Optional<Position> position = currentMethod.getBegin();
+		return position.isPresent() ? position.get().line : -1;
+	}
 	
 }

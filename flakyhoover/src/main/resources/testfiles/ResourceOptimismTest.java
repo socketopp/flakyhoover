@@ -28,6 +28,8 @@ public class ResourceOptimismTest extends TestCase {
 	// https://github.com/apache/nutch/blob/branch-1.4/src/plugin/creativecommons/src/test/org/creativecommons/nutch/TestCCParseFilter.java
 
 	// is flaky
+	
+	@Test
 	public void testPages() throws Exception {
 		pageTest(new File(testDir, "anchor.html"), "http://foo.com/",
 				"http://creativecommons.org/licenses/by-nc-sa/1.0", "a", null);
@@ -43,6 +45,8 @@ public class ResourceOptimismTest extends TestCase {
 
 //	Source:https:// github.com/apache/ant-ivy/blob/2.1.x/test/java/org/apache/ivy/core/retrieve/RetrieveTest.java
 //  is flaky
+	
+	@Test
 	private void assertLink(String filename) throws IOException {
 		// if the OS is known to support symlink, check that the file is a symlink,
 		// otherwise just check the file exist.
@@ -81,6 +85,7 @@ public class ResourceOptimismTest extends TestCase {
 	// SRC:
 	// https://github.com/apache/ant-ivy/blob/2.1.x/test/java/org/apache/ivy/core/settings/XmlSettingsParserTest.java
 	// Flaky
+	@Test
 	public void test() throws Exception {
 		IvySettings settings = new IvySettings();
 		XmlSettingsParser parser = new XmlSettingsParser(settings);
@@ -93,6 +98,7 @@ public class ResourceOptimismTest extends TestCase {
 	// SRC:
 	// https://github.com/apache/karaf/blob/karaf-2.3.x/admin/core/src/test/java/org/apache/karaf/admin/internal/AdminServiceImplTest.java
 	// Flaky
+	@Test
 	public void testHandleFeatures() throws Exception {
 		AdminServiceImpl as = new AdminServiceImpl();
 
@@ -129,6 +135,7 @@ public class ResourceOptimismTest extends TestCase {
 	// SRC:
 	// https://github.com/apache/karaf/blob/karaf-2.3.x/deployer/blueprint/src/test/java/org/apache/karaf/deployer/blueprint/BlueprintDeploymentListenerTest.java
 	// FLAKY
+	@Test
 	public void testPackagesExtraction() throws Exception {
 		BlueprintDeploymentListener l = new BlueprintDeploymentListener();
 		File f = new File(getClass().getClassLoader().getResource("test.xml").toURI());
@@ -142,6 +149,7 @@ public class ResourceOptimismTest extends TestCase {
 	// SRC:
 	// https://github.com/apache/pig/blob/branch-0.8/contrib/zebra/src/test/org/apache/hadoop/zebra/tfile/TestTFileByteArrays.java
 	// FLAKY
+	@Test
 	public void testNoDataEntry() throws IOException {
 		if (skip)
 			return;
@@ -158,6 +166,7 @@ public class ResourceOptimismTest extends TestCase {
 	// https://github.com/apache/pig/blob/branch-0.8/contrib/zebra/src/test/org/apache/hadoop/zebra/tfile/TestTFileByteArrays.java
 
 	// FLAKY
+	@Test
 	public void testFailureGetNonExistentMetaBlock() throws IOException {
 		if (skip)
 			return;
@@ -248,6 +257,7 @@ public class ResourceOptimismTest extends TestCase {
 	}
 
 	// Flaky
+	@Test
 	public void relationFunction() {
 		readContents(new Path());
 	}
@@ -255,6 +265,7 @@ public class ResourceOptimismTest extends TestCase {
 	// SRC:
 	// https://github.com/apache/nutch/blob/branch-1.4/src/test/org/apache/nutch/crawl/TestGenerator.java
 	// FLAKY
+	@Test
 	private ArrayList<URLCrawlDatum> readContents(Path fetchlist) throws IOException {
 		// verify results
 		SequenceFile.Reader reader = new SequenceFile.Reader(fs, fetchlist, conf);
@@ -304,7 +315,16 @@ public class ResourceOptimismTest extends TestCase {
 			File file = new File(regionDir);
 		}
 	}
+	
+	@Test
+	public void relationSmell() {
+		// Not smelly but calls a smelly method
+		readContents(new Path());
+		
+	}
 
+	
+	// Not a test function, but flaky ofc.
 	public void classVariableExample() {
 
 		someObject.getInstance().callingMethod(new Creathing(caller(testDir)));

@@ -18,6 +18,10 @@ import org.w3c.dom.Document;
 import org.xml.sax.InputSource;
 
 public class IssueWriter {
+	
+	private IssueWriter() {
+		
+	}
 
 	private static String prettyPrint(Document document) throws TransformerException {
 		TransformerFactory transformerFactory = TransformerFactory.newInstance();

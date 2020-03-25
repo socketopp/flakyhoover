@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import flakes.SharedFixture;
+import smells.SharedFixture;
 import util.DocumentReader;
 import util.DocumentWriter;
 import util.FlakyFile;
@@ -145,7 +145,7 @@ public class Main {
 								fields.add(smell.getSmellType());
 								fields.add(file.getCategory());
 								outputData.add(fields);
-								fields = new ArrayList<String>();
+								fields = new ArrayList<>();
 							}
 						}
 

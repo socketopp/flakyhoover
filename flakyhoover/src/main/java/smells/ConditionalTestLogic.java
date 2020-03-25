@@ -1,9 +1,10 @@
-package flakes;
+package smells;
 
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import com.github.javaparser.ast.CompilationUnit;
@@ -134,7 +135,7 @@ public class ConditionalTestLogic extends AbstractSmell {
 					currentMethod = n;
 					initTestSmells(n);
 
-					testMethod = new TestMethod(n.getNameAsString(), n.getBegin().get().line);
+					testMethod = new TestMethod(n.getNameAsString(), ASTHelper.getLine(currentMethod));
 					testMethod.setHasSmell(false); // default value is false (i.e. no smell)
 					this.allMethodsData.add(new IntelMethod(n.getNameAsString(), false));
 					this.allClassMethods.add(n.getNameAsString());
@@ -190,7 +191,7 @@ public class ConditionalTestLogic extends AbstractSmell {
 				case "analyzeRelationState": {
 					initTestSmells(n);
 
-					testMethod = new TestMethod(n.getNameAsString(), n.getBegin().get().line);
+					testMethod = new TestMethod(n.getNameAsString(), ASTHelper.getLine(currentMethod));
 					testMethod.setHasSmell(false);
 					hasSmell = analyzeRelations(n);
 
@@ -274,9 +275,10 @@ public class ConditionalTestLogic extends AbstractSmell {
 				forCount++;
 				if (n.getBody().toString().contains("assert")) {
 					NameExpr counter = null;
+					Optional<NameExpr> findFirst = n.findFirst(NameExpr.class);
 					// Get the counter inside the for-loop condition
-					if (n.findFirst(NameExpr.class).isPresent()) {
-						counter = n.findFirst(NameExpr.class).get();
+					if (findFirst.isPresent()) {
+						counter = findFirst.get();
 					}
 
 					// TODO For next commit refactor these conditions below

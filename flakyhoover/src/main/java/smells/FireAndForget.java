@@ -1,4 +1,4 @@
-package flakes;
+package smells;
 
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
