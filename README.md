@@ -25,6 +25,10 @@ The following command would then produce an csv file containing all test methods
 
 In this version FlakyHoover only detect test methods annotated with @Test compared to previous version. Annotations were orignally introduced in Junit4 that was released in 2006. 
 
+### Project Info
+
+This project draws inspiration from [TestSmellDetector](https://github.com/TestSmells/TestSmellDetector), so cred to them! 
+
 ### Contact
 
 Please feel free to contact me on my student mail andla830@student.liu.se.
